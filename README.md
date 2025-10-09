@@ -3,7 +3,7 @@
 ![Hacktoberfest](https://img.shields.io/badge/Hacktoberfest-2025-blueviolet)
 ![GitHub issues](https://img.shields.io/github/issues/IEEE-Student-Branch-NSBM/hacktoberfest-2025)
 ![GitHub pull requests](https://img.shields.io/github/issues-pr/IEEE-Student-Branch-NSBM/hacktoberfest-2025)
-![GitHub stars](https://img.shields.io/github/stars/IEEE-Student-Branch-NSBM/hacktoberfest-2025?style=social)
+![GitHub stars](https://img.shields.io/github/stars/IEEE-Student-Branch-NSBM/hacktoberfest-2025)
 
 ## 🌟 Welcome Contributors!
 
