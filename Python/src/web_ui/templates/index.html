@@ -118,7 +118,7 @@
 
     <!-- Recent Contributions -->
     <div class="row">
-        <div class="col-12">
+        <div class="col-md-8">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">
@@ -199,6 +199,11 @@
                     {% endif %}
                 </div>
             </div>
+        </div>
+        
+        <!-- Notification Widget -->
+        <div class="col-md-4">
+            {% include 'notification_widget.html' %}
         </div>
     </div>
 </div>

@@ -306,6 +306,82 @@ footer {
     background-color: var(--hacktober-orange) !important;
 }
 
+/* Notification specific styles */
+.notification-toast {
+    min-width: 300px;
+}
+
+.notification-dropdown {
+    min-width: 350px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.notification-item-small {
+    padding: 8px 12px;
+    border-bottom: 1px solid #eee;
+    transition: background-color 0.2s ease;
+}
+
+.notification-item-small:hover {
+    background-color: #f8f9fa;
+}
+
+.notification-item-small.unread {
+    background-color: #e3f2fd;
+    border-left: 3px solid #2196f3;
+}
+
+.notification-item-small:last-child {
+    border-bottom: none;
+}
+
+.notification-bell {
+    position: relative;
+}
+
+.notification-bell .badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background-color: #dc3545;
+    color: white;
+    border-radius: 50%;
+    padding: 0.2em 0.4em;
+    font-size: 0.7rem;
+    min-width: 18px;
+    text-align: center;
+}
+
+/* Pulse animation for new notifications */
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+}
+
+.notification-bell.has-new .badge {
+    animation: pulse 2s infinite;
+}
+
+/* Real-time notification popup */
+.notification-popup {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    width: 300px;
+    z-index: 1050;
+    transition: all 0.3s ease;
+}
+
+.notification-popup.show {
+    transform: translateX(0);
+}
+
+.notification-popup.hide {
+    transform: translateX(320px);
+}
+
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
     body {
@@ -325,5 +401,10 @@ footer {
     .table th {
         background-color: #3d3d3d;
         color: #ffffff;
+    }
+    
+    .notification-item-small.unread {
+        background-color: #1e3a8a;
+        border-left-color: #3b82f6;
     }
 }
