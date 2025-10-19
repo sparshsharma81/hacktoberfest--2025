@@ -351,5 +351,147 @@ def api_create_system_notification():
         return jsonify({'success': False, 'error': str(e)}), 400
 
 
+@app.route('/achievement-badges')
+def achievement_badges():
+    """Display the achievement badges page."""
+    return render_template('achievement_badges.html')
+
+
+@app.route('/api/badges')
+def api_badges():
+    """API endpoint to get all achievement badges data."""
+    # In a real implementation, this would fetch from a database
+    badges_data = {
+        'earned': [
+            {
+                'id': 'first-contribution',
+                'name': 'First Contribution',
+                'description': 'Made your first contribution to Hacktoberfest!',
+                'icon': 'fas fa-seedling',
+                'category': 'contribution',
+                'earned_date': '2024-10-02'
+            },
+            {
+                'id': 'streak-master',
+                'name': 'Streak Master',
+                'description': 'Maintained a 5-day contribution streak!',
+                'icon': 'fas fa-fire',
+                'category': 'contribution',
+                'earned_date': '2024-10-07'
+            },
+            {
+                'id': 'bug-hunter',
+                'name': 'Bug Hunter',
+                'description': 'Found and fixed 3 bugs in different projects!',
+                'icon': 'fas fa-bug',
+                'category': 'contribution',
+                'earned_date': '2024-10-12'
+            }
+        ],
+        'in_progress': [
+            {
+                'id': 'feature-creator',
+                'name': 'Feature Creator',
+                'description': 'Implement 5 new features across projects',
+                'icon': 'fas fa-plus-circle',
+                'category': 'contribution',
+                'progress': {'current': 2, 'total': 5}
+            },
+            {
+                'id': 'documentation-guru',
+                'name': 'Documentation Guru',
+                'description': 'Improve documentation in 10 repositories',
+                'icon': 'fas fa-book',
+                'category': 'contribution',
+                'progress': {'current': 1, 'total': 10}
+            },
+            {
+                'id': 'team-player',
+                'name': 'Team Player',
+                'description': 'Collaborate on 3 different team projects',
+                'icon': 'fas fa-handshake',
+                'category': 'engagement',
+                'progress': {'current': 1, 'total': 3}
+            },
+            {
+                'id': 'milestone-achiever',
+                'name': 'Milestone Achiever',
+                'description': 'Complete all 4 required Hacktoberfest PRs',
+                'icon': 'fas fa-flag-checkered',
+                'category': 'special',
+                'progress': {'current': 3, 'total': 4}
+            },
+            {
+                'id': 'super-contributor',
+                'name': 'Super Contributor',
+                'description': 'Make 20+ contributions in one month',
+                'icon': 'fas fa-rocket',
+                'category': 'contribution',
+                'progress': {'current': 5, 'total': 20}
+            },
+            {
+                'id': 'hacktoberfest-hero',
+                'name': 'Hacktoberfest Hero',
+                'description': 'Complete Hacktoberfest and earn 10+ badges',
+                'icon': 'fas fa-crown',
+                'category': 'special',
+                'progress': {'current': 3, 'total': 10}
+            }
+        ],
+        'locked': [
+            {
+                'id': 'test-champion',
+                'name': 'Test Champion',
+                'description': 'Add comprehensive tests to 5 projects',
+                'icon': 'fas fa-vial',
+                'category': 'contribution',
+                'progress': {'current': 0, 'total': 5}
+            },
+            {
+                'id': 'early-bird',
+                'name': 'Early Bird',
+                'description': 'Start contributing in the first week of October',
+                'icon': 'fas fa-sun',
+                'category': 'special',
+                'status': 'missed'
+            },
+            {
+                'id': 'mentor',
+                'name': 'Mentor',
+                'description': 'Help 5 new contributors with their first PRs',
+                'icon': 'fas fa-chalkboard-teacher',
+                'category': 'engagement',
+                'progress': {'current': 0, 'total': 5}
+            }
+        ]
+    }
+    
+    return jsonify(badges_data)
+
+
+@app.route('/api/badges/earn/<badge_id>', methods=['POST'])
+def api_earn_badge(badge_id):
+    """API endpoint to earn a badge (for testing/simulation)."""
+    # In a real implementation, this would validate the achievement
+    # and update the database
+    
+    # Create a notification for the earned badge
+    try:
+        notification_manager.create_notification(
+            title=f"🎉 Badge Earned!",
+            message=f"Congratulations! You've earned the {badge_id.replace('-', ' ').title()} badge!",
+            notification_type=NotificationType.ACHIEVEMENT,
+            priority=NotificationPriority.HIGH,
+            username=request.args.get('username', 'anonymous'),
+            action_url=url_for('achievement_badges'),
+            action_text='View Badge'
+        )
+        
+        return jsonify({'success': True, 'message': f'Badge {badge_id} earned!'})
+    
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
