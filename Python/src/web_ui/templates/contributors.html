@@ -22,23 +22,54 @@
         </div>
     </div>
 
-    <!-- Search and Filter -->
+    <!-- Enhanced Search and Filter -->
     <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="input-group">
+        <div class="col-md-5">
+            <div class="input-group search-box">
                 <span class="input-group-text">
                     <i class="fas fa-search"></i>
                 </span>
                 <input type="text" class="form-control" id="searchInput" 
-                       placeholder="Search contributors by name or username...">
+                       placeholder="Search contributors by name or username..."
+                       autocomplete="off">
+                <button class="btn btn-outline-secondary" type="button" id="clearSearch" title="Clear search">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
+            <small class="text-muted">
+                <i class="fas fa-keyboard"></i> Press <kbd>Ctrl+K</kbd> to focus search
+            </small>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-4">
+            <select class="form-select" id="contributionTypeFilter">
+                <option value="">All Contribution Types</option>
+                <option value="bug-fix">🐛 Bug Fixes</option>
+                <option value="feature">✨ Features</option>
+                <option value="documentation">📝 Documentation</option>
+                <option value="testing">🧪 Testing</option>
+                <option value="refactoring">🔧 Refactoring</option>
+                <option value="enhancement">⚡ Enhancements</option>
+            </select>
+        </div>
+        <div class="col-md-3">
             <select class="form-select" id="sortSelect">
                 <option value="name">Sort by Name</option>
                 <option value="contributions">Sort by Contributions</option>
                 <option value="recent">Sort by Recent Activity</option>
             </select>
+        </div>
+    </div>
+    
+    <!-- Search Results Summary -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="search-results-summary" id="searchSummary" style="display: none;">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <span id="searchResultsText">Showing results for your search</span>
+                    <button type="button" class="btn-close float-end" id="clearFilters"></button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -50,7 +81,8 @@
                 <div class="col-md-6 col-lg-4 mb-4 contributor-card animate-in" 
                      data-name="{{ contributor.name.lower() }}" 
                      data-username="{{ contributor.github_username.lower() }}"
-                     data-contributions="{{ contributor.get_contribution_count() }}">
+                     data-contributions="{{ contributor.get_contribution_count() }}"
+                     data-contribution-types="{% for contribution in contributor.contributions %}{{ contribution.type }}{% if not loop.last %},{% endif %}{% endfor %}">>
                     <div class="contributor-grid-card">
                         
                         <!-- Completion Badge -->
@@ -189,25 +221,41 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('searchInput');
+    const contributionTypeFilter = document.getElementById('contributionTypeFilter');
     const sortSelect = document.getElementById('sortSelect');
     const contributorsGrid = document.getElementById('contributorsGrid');
+    const clearSearchBtn = document.getElementById('clearSearch');
+    const clearFiltersBtn = document.getElementById('clearFilters');
+    const searchSummary = document.getElementById('searchSummary');
+    const searchResultsText = document.getElementById('searchResultsText');
     
     // Enhanced search functionality with debouncing
     let searchTimeout;
-    searchInput.addEventListener('input', function() {
+    
+    function performSearch() {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
-            const searchTerm = this.value.toLowerCase();
+            const searchTerm = searchInput.value.toLowerCase();
+            const selectedType = contributionTypeFilter.value;
             const cards = document.querySelectorAll('.contributor-card');
             let visibleCount = 0;
+            let totalContributors = cards.length;
             
             cards.forEach((card, index) => {
                 const name = card.getAttribute('data-name');
                 const username = card.getAttribute('data-username');
+                const contributionTypes = card.getAttribute('data-contribution-types') || '';
                 
-                if (name.includes(searchTerm) || username.includes(searchTerm)) {
+                const matchesSearch = !searchTerm || 
+                    name.includes(searchTerm) || 
+                    username.includes(searchTerm);
+                
+                const matchesType = !selectedType || 
+                    contributionTypes.includes(selectedType);
+                
+                if (matchesSearch && matchesType) {
                     card.style.display = 'block';
-                    card.style.animationDelay = `${index * 0.1}s`;
+                    card.style.animationDelay = `${index * 0.05}s`;
                     card.classList.add('animate-in');
                     visibleCount++;
                 } else {
@@ -216,10 +264,56 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
+            // Update search summary
+            updateSearchSummary(searchTerm, selectedType, visibleCount, totalContributors);
+            
             // Show "no results" message if needed
-            updateNoResultsMessage(visibleCount === 0 && searchTerm !== '');
-        }, 300);
+            updateNoResultsMessage(visibleCount === 0 && (searchTerm || selectedType));
+        }, 250);
+    }
+    
+    // Search input event listener
+    searchInput.addEventListener('input', performSearch);
+    
+    // Contribution type filter event listener
+    contributionTypeFilter.addEventListener('change', performSearch);
+    
+    // Clear search button
+    clearSearchBtn.addEventListener('click', function() {
+        searchInput.value = '';
+        searchInput.focus();
+        performSearch();
     });
+    
+    // Clear all filters button
+    clearFiltersBtn.addEventListener('click', function() {
+        searchInput.value = '';
+        contributionTypeFilter.value = '';
+        performSearch();
+        searchInput.focus();
+    });
+    
+    // Update search summary
+    function updateSearchSummary(searchTerm, selectedType, visibleCount, totalCount) {
+        if (searchTerm || selectedType) {
+            let summaryText = `Showing ${visibleCount} of ${totalCount} contributors`;
+            
+            if (searchTerm && selectedType) {
+                const typeName = contributionTypeFilter.options[contributionTypeFilter.selectedIndex].text;
+                summaryText += ` matching "${searchTerm}" with ${typeName}`;
+            } else if (searchTerm) {
+                summaryText += ` matching "${searchTerm}"`;
+            } else if (selectedType) {
+                const typeName = contributionTypeFilter.options[contributionTypeFilter.selectedIndex].text;
+                summaryText += ` with ${typeName}`;
+            }
+            
+            searchResultsText.textContent = summaryText;
+            searchSummary.style.display = 'block';
+        } else {
+            searchSummary.style.display = 'none';
+        }
+    }
 
     // Enhanced sort functionality with smooth animations
     sortSelect.addEventListener('change', function() {
@@ -227,7 +321,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const cards = Array.from(document.querySelectorAll('.contributor-card'));
         
         // Add loading state
-        contributorsGrid.style.opacity = '0.6';
+        contributorsGrid.style.opacity = '0.7';
         contributorsGrid.style.pointerEvents = 'none';
         
         setTimeout(() => {
@@ -250,17 +344,17 @@ document.addEventListener('DOMContentLoaded', function() {
             cards.forEach((card, index) => {
                 setTimeout(() => {
                     contributorsGrid.appendChild(card);
-                    card.style.animationDelay = `${index * 0.05}s`;
+                    card.style.animationDelay = `${index * 0.03}s`;
                     card.classList.add('animate-in');
-                }, index * 30);
+                }, index * 20);
             });
             
             // Remove loading state
             setTimeout(() => {
                 contributorsGrid.style.opacity = '1';
                 contributorsGrid.style.pointerEvents = 'auto';
-            }, cards.length * 30 + 300);
-        }, 200);
+            }, cards.length * 20 + 200);
+        }, 150);
     });
     
     // Add hover effects for stats

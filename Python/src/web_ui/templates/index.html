@@ -203,6 +203,36 @@
         
         <!-- Right Sidebar -->
         <div class="col-md-4">
+            <!-- Quick Search Widget -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-search text-primary"></i>
+                        Quick Search
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="input-group search-box">
+                        <span class="input-group-text">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" class="form-control" id="quickSearch" 
+                               placeholder="Search contributors..."
+                               autocomplete="off">
+                    </div>
+                    <div class="quick-search-results mt-3" id="quickSearchResults" style="display: none;">
+                        <div class="list-group list-group-flush">
+                            <!-- Results will be populated here -->
+                        </div>
+                    </div>
+                    <div class="mt-2 text-center">
+                        <a href="{{ url_for('contributors') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-users"></i> View All Contributors
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Achievement Badges Widget -->
             {% include 'badge_widget.html' %}
             
@@ -287,5 +317,84 @@
                 }
             });
         });
+    
+    // Quick Search Functionality
+    const quickSearchInput = document.getElementById('quickSearch');
+    const quickSearchResults = document.getElementById('quickSearchResults');
+    let searchTimeout;
+    
+    if (quickSearchInput) {
+        quickSearchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const query = this.value.trim();
+            
+            if (query.length < 2) {
+                quickSearchResults.style.display = 'none';
+                return;
+            }
+            
+            searchTimeout = setTimeout(() => {
+                // Simulate API call - in real implementation, call /api/contributors
+                fetch(`/api/contributors`)
+                    .then(response => response.json())
+                    .then(contributors => {
+                        const filteredResults = contributors.filter(contributor => 
+                            contributor.name.toLowerCase().includes(query.toLowerCase()) ||
+                            contributor.github_username.toLowerCase().includes(query.toLowerCase())
+                        ).slice(0, 5); // Limit to 5 results
+                        
+                        displayQuickSearchResults(filteredResults, query);
+                    })
+                    .catch(error => {
+                        console.error('Search error:', error);
+                        quickSearchResults.style.display = 'none';
+                    });
+            }, 300);
+        });
+        
+        // Hide results when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!quickSearchInput.contains(e.target) && !quickSearchResults.contains(e.target)) {
+                quickSearchResults.style.display = 'none';
+            }
+        });
+    }
+    
+    function displayQuickSearchResults(results, query) {
+        const resultsContainer = quickSearchResults.querySelector('.list-group');
+        
+        if (results.length === 0) {
+            resultsContainer.innerHTML = `
+                <div class="list-group-item text-center text-muted py-3">
+                    <i class="fas fa-search-minus"></i>
+                    <div>No contributors found for "${query}"</div>
+                </div>
+            `;
+        } else {
+            resultsContainer.innerHTML = results.map(contributor => `
+                <a href="/contributor/${contributor.github_username}" 
+                   class="list-group-item list-group-item-action d-flex align-items-center">
+                    <img src="https://github.com/${contributor.github_username}.png" 
+                         class="rounded-circle me-3" 
+                         width="32" height="32"
+                         onerror="this.src='https://via.placeholder.com/32x32/6c757d/ffffff?text=${contributor.name[0].toUpperCase()}'">
+                    <div class="flex-grow-1">
+                        <div class="fw-bold">${highlightMatch(contributor.name, query)}</div>
+                        <small class="text-muted">@${highlightMatch(contributor.github_username, query)}</small>
+                    </div>
+                    <div class="text-end">
+                        <small class="text-muted">${contributor.contribution_count || 0} contributions</small>
+                    </div>
+                </a>
+            `).join('');
+        }
+        
+        quickSearchResults.style.display = 'block';
+    }
+    
+    function highlightMatch(text, query) {
+        const regex = new RegExp(`(${query})`, 'gi');
+        return text.replace(regex, '<mark>$1</mark>');
+    }
 </script>
 {% endblock %}
