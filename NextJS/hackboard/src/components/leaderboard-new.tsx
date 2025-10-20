@@ -174,7 +174,7 @@ const getRankBadgeVariant = (rank: number) => {
 };
 
 const PodiumCard = ({ contributor }: { contributor: Contributor }) => {
-    const completionPercentage = (contributor.mergedPRs / 6) * 100;
+    const completionPercentage = (contributor.mergedPRs / contributor.totalPRs) * 100;
 
     return (
         <Card className="relative overflow-hidden">
@@ -227,7 +227,7 @@ const PodiumCard = ({ contributor }: { contributor: Contributor }) => {
                 <div>
                     <div className="flex justify-between text-xs text-muted-foreground mb-2">
                         <span>Progress</span>
-                        <span>{contributor.mergedPRs}/6 PRs</span>
+                        <span>{contributor.mergedPRs}/{contributor.totalPRs} PRs</span>
                     </div>
                     <Progress value={completionPercentage} className="h-2" />
                 </div>
@@ -351,7 +351,7 @@ export default function Leaderboard() {
                                         </TableHeader>
                                         <TableBody>
                                             {others.map((contributor) => {
-                                                const completionPercentage = (contributor.mergedPRs / 6) * 100;
+                                                const completionPercentage = (contributor.mergedPRs / contributor.totalPRs) * 100;
 
                                                 return (
                                                     <TableRow key={contributor.id} className="hover:bg-muted/50 transition-colors">
@@ -404,7 +404,7 @@ export default function Leaderboard() {
                                                             <div className="w-full max-w-24 mx-auto">
                                                                 <div className="flex justify-between text-xs text-muted-foreground mb-1">
                                                                     <span>{contributor.mergedPRs}</span>
-                                                                    <span>6</span>
+                                                                    <span>{contributor.totalPRs}</span>
                                                                 </div>
                                                                 <Progress value={completionPercentage} className="h-2" />
                                                             </div>
