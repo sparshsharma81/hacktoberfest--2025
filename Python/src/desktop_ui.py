@@ -209,7 +209,8 @@ class HacktoberfestDesktopUI:
         ttk.Button(
             contributor_frame,
             text="Add Contributor",
-            command=self.add_contributor
+            command=self.add_contributor,
+            style="Primary.TButton"
         ).grid(row=3, column=0, columnspan=2, pady=20)
         
         # Add Contribution Form
@@ -244,7 +245,8 @@ class HacktoberfestDesktopUI:
         ttk.Button(
             contribution_frame,
             text="Add Contribution",
-            command=self.add_contribution
+            command=self.add_contribution,
+            style="Primary.TButton"
         ).grid(row=5, column=0, columnspan=2, pady=20)
 
     def load_initial_data(self):
