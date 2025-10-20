@@ -1,9 +1,5 @@
-import Image from "next/image";
+import Leaderboard from "@/components/leaderboard";
 
 export default function Home() {
-  return (
-    <>
-      <p className="text-md font-normal p-3">hackboard leaderboard</p>
-    </>
-  );
+  return <Leaderboard />;
 }
