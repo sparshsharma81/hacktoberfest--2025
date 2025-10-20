@@ -1294,3 +1294,112 @@ kbd {
         transform: translateY(0);
     }
 }
+
+/* Git Pull Timing Widget Styles */
+.git-status {
+    padding: 0.75rem;
+    border-radius: 8px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.git-status.pulling {
+    background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+    border-color: #ffc107;
+    animation: pulse 1.5s infinite;
+}
+
+.git-status.success {
+    background: linear-gradient(135deg, #d4edda, #c3e6cb);
+    border-color: #28a745;
+}
+
+.git-status.error {
+    background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+    border-color: #dc3545;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+.pull-history-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.pull-history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    background: #f8f9fa;
+    border-left: 3px solid #28a745;
+    transition: all 0.2s ease;
+    animation: slideInRight 0.3s ease-out;
+}
+
+.pull-history-item:hover {
+    background: #e9ecef;
+    transform: translateX(5px);
+}
+
+.pull-history-item.error {
+    border-left-color: #dc3545;
+    background: #fff5f5;
+}
+
+.pull-history-item.error:hover {
+    background: #fed7d7;
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.pull-time {
+    font-weight: 600;
+    color: #28a745;
+}
+
+.pull-time.slow {
+    color: #ffc107;
+}
+
+.pull-time.very-slow {
+    color: #dc3545;
+}
+
+.git-stats {
+    background: rgba(0, 123, 255, 0.05);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.git-spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007bff;
+    border-radius: 50%;
+    animation: gitSpin 1s linear infinite;
+    margin-right: 0.5rem;
+}
+
+@keyframes gitSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

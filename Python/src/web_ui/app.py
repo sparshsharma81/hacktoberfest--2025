@@ -493,5 +493,168 @@ def api_earn_badge(badge_id):
         return jsonify({'success': False, 'error': str(e)}), 400
 
 
+@app.route('/api/git/pull', methods=['POST'])
+def api_git_pull():
+    """API endpoint to perform git pull and return timing information."""
+    import subprocess
+    import time
+    import os
+    
+    try:
+        # Get the repository root directory
+        repo_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        
+        # Record start time
+        start_time = time.time()
+        
+        # Perform git pull
+        result = subprocess.run(
+            ['git', 'pull'],
+            cwd=repo_dir,
+            capture_output=True,
+            text=True,
+            timeout=60  # 60 second timeout
+        )
+        
+        # Record end time
+        end_time = time.time()
+        duration_ms = int((end_time - start_time) * 1000)
+        
+        if result.returncode == 0:
+            # Parse git output to count changes
+            output = result.stdout.strip()
+            changes = 0
+            
+            # Simple parsing for common git pull outputs
+            if "files changed" in output:
+                import re
+                match = re.search(r'(\d+) files? changed', output)
+                if match:
+                    changes = int(match.group(1))
+            elif "Already up to date" in output or "Already up-to-date" in output:
+                changes = 0
+            elif output and "Updating" in output:
+                # Estimate changes from output lines
+                changes = len([line for line in output.split('\n') if line.strip() and not line.startswith('From')])
+            
+            # Create a notification for successful pull
+            notification_manager.create_notification(
+                title="📥 Git Pull Completed",
+                message=f"Repository updated successfully in {duration_ms}ms. {changes} files changed.",
+                notification_type=NotificationType.SUCCESS,
+                priority=NotificationPriority.LOW,
+                username='system',
+                expires_in_hours=2
+            )
+            
+            return jsonify({
+                'success': True,
+                'duration': duration_ms,
+                'changes': changes,
+                'message': output if output else 'Repository is up to date',
+                'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
+            })
+        else:
+            # Git pull failed
+            error_message = result.stderr.strip() or result.stdout.strip() or 'Unknown git error'
+            
+            # Create a notification for failed pull
+            notification_manager.create_notification(
+                title="❌ Git Pull Failed",
+                message=f"Failed to update repository: {error_message}",
+                notification_type=NotificationType.ERROR,
+                priority=NotificationPriority.HIGH,
+                username='system',
+                expires_in_hours=6
+            )
+            
+            return jsonify({
+                'success': False,
+                'error': error_message,
+                'duration': duration_ms
+            }), 400
+            
+    except subprocess.TimeoutExpired:
+        return jsonify({
+            'success': False,
+            'error': 'Git pull timed out after 60 seconds',
+            'duration': 60000
+        }), 408
+        
+    except FileNotFoundError:
+        return jsonify({
+            'success': False,
+            'error': 'Git command not found. Please ensure Git is installed.',
+            'duration': 0
+        }), 500
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Unexpected error: {str(e)}',
+            'duration': 0
+        }), 500
+
+
+@app.route('/api/git/status')
+def api_git_status():
+    """API endpoint to get git repository status."""
+    import subprocess
+    import os
+    
+    try:
+        repo_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        
+        # Get git status
+        result = subprocess.run(
+            ['git', 'status', '--porcelain'],
+            cwd=repo_dir,
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        
+        if result.returncode == 0:
+            changes = len([line for line in result.stdout.strip().split('\n') if line.strip()])
+            
+            # Get last commit info
+            commit_result = subprocess.run(
+                ['git', 'log', '-1', '--format=%H|%s|%an|%ar'],
+                cwd=repo_dir,
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            
+            commit_info = {}
+            if commit_result.returncode == 0 and commit_result.stdout.strip():
+                parts = commit_result.stdout.strip().split('|')
+                if len(parts) >= 4:
+                    commit_info = {
+                        'hash': parts[0][:8],
+                        'message': parts[1],
+                        'author': parts[2],
+                        'time': parts[3]
+                    }
+            
+            return jsonify({
+                'success': True,
+                'uncommitted_changes': changes,
+                'clean': changes == 0,
+                'last_commit': commit_info
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to get git status'
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
