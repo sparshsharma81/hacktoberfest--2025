@@ -272,6 +272,54 @@ Examples:
         help="Show search and filter statistics"
     )
     
+    # Repository statistics options
+    parser.add_argument(
+        "--repo-stats",
+        metavar="REPO_NAME",
+        help="Show statistics for a specific repository (or 'all' for all repos)"
+    )
+    
+    parser.add_argument(
+        "--repo-list",
+        action="store_true",
+        help="List all repositories with summary statistics"
+    )
+    
+    parser.add_argument(
+        "--repo-top",
+        type=int,
+        metavar="LIMIT",
+        default=10,
+        help="Show top N repositories (default: 10)"
+    )
+    
+    parser.add_argument(
+        "--repo-sort-by",
+        choices=["contributions", "contributors", "activity_score", "pull_requests"],
+        default="contributions",
+        help="Sort repositories by metric (default: contributions)"
+    )
+    
+    parser.add_argument(
+        "--repo-trending",
+        type=int,
+        metavar="DAYS",
+        help="Show trending repositories from last N days"
+    )
+    
+    parser.add_argument(
+        "--repo-compare",
+        nargs="+",
+        metavar="REPO_NAMES",
+        help="Compare multiple repositories"
+    )
+    
+    parser.add_argument(
+        "--repo-health",
+        metavar="REPO_NAME",
+        help="Show health assessment for a repository"
+    )
+    
     # Web UI mode
     parser.add_argument(
         "--web",
@@ -683,6 +731,35 @@ Examples:
             print("\nRepositories:")
             for repo, count in sorted(stats['repositories'].items(), key=lambda x: x[1], reverse=True)[:10]:
                 print(f"  • {repo}: {count}")
+    
+    # Repository statistics handlers
+    elif args.repo_stats:
+        if args.repo_stats.lower() == "all":
+            tracker.print_repository_stats()
+        else:
+            tracker.print_repository_stats(args.repo_stats)
+    
+    elif args.repo_list:
+        tracker.print_repository_stats()
+    
+    elif args.repo_trending:
+        tracker.print_trending_repositories(args.repo_trending, args.repo_top)
+    
+    elif args.repo_compare:
+        tracker.print_repository_comparison(args.repo_compare)
+    
+    elif args.repo_health:
+        tracker.print_repository_health(args.repo_health)
+    
+    elif args.search_stats or args.repo_top > 0:
+        # Show top repositories by default metric
+        top_repos = tracker.get_top_repositories(args.repo_top, args.repo_sort_by)
+        print(f"\n🏆 Top {args.repo_top} Repositories (by {args.repo_sort_by}) 🏆")
+        print("=" * 70)
+        
+        for i, (repo_name, stats) in enumerate(top_repos, 1):
+            print(f"  {i}. {repo_name}")
+            print(f"     Contributions: {stats['total_contributions']} | Contributors: {stats['unique_contributors']} | Activity Score: {stats['activity_score']:.1f}/100")
     
     # CSV Export/Import handlers
     elif args.export_csv:

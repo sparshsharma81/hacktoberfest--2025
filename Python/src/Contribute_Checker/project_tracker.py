@@ -5,13 +5,14 @@ Project tracker for managing Hacktoberfest contributions and contributors.
 import json
 import os
 from datetime import datetime
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 from .contributor import Contributor
 from .email_notifier import EmailNotifier
 from .performance_metrics import PerformanceMetrics
 from .csv_handler import CSVHandler
 from .search_engine import SearchEngine, SearchType, SortOrder
 from .backup_engine import BackupEngine, BackupType, BackupFormat
+from .repo_statistics import RepositoryStats
 
 
 class ProjectTracker:
@@ -54,6 +55,9 @@ class ProjectTracker:
         
         # Initialize backup engine
         self.backup_engine = BackupEngine(backup_dir="backups", data_file=data_file)
+        
+        # Initialize repository statistics
+        self.repo_stats = RepositoryStats()
         
         self.load_data()
     
@@ -782,6 +786,214 @@ class ProjectTracker:
             Dict[str, Any]: Statistics
         """
         return self.search_engine.get_quick_stats(search_results)
+    
+    # ========================= REPOSITORY STATISTICS METHODS =========================
+    
+    def get_repository_stats(self, repo_name: str) -> Dict[str, Any]:
+        """
+        Get comprehensive statistics for a repository.
+        
+        Args:
+            repo_name (str): Repository name
+            
+        Returns:
+            Dict[str, Any]: Repository statistics
+        """
+        return self.repo_stats.calculate_repository_stats(
+            list(self.contributors.values()),
+            repo_name
+        )
+    
+    def get_all_repository_stats(self) -> Dict[str, Dict[str, Any]]:
+        """
+        Get statistics for all repositories.
+        
+        Returns:
+            Dict[str, Dict[str, Any]]: Statistics for each repository
+        """
+        return self.repo_stats.get_all_repositories_stats(list(self.contributors.values()))
+    
+    def get_top_repositories(self,
+                            limit: int = 10,
+                            sort_by: str = "contributions") -> List[Tuple[str, Dict[str, Any]]]:
+        """
+        Get top repositories by various metrics.
+        
+        Args:
+            limit (int): Number of repositories
+            sort_by (str): Sort criterion
+            
+        Returns:
+            List[Tuple[str, Dict[str, Any]]]: Top repositories
+        """
+        return self.repo_stats.get_top_repositories(
+            list(self.contributors.values()),
+            limit,
+            sort_by
+        )
+    
+    def compare_repositories(self, repo_names: List[str]) -> Dict[str, Any]:
+        """
+        Compare multiple repositories.
+        
+        Args:
+            repo_names (List[str]): Repositories to compare
+            
+        Returns:
+            Dict[str, Any]: Comparison data
+        """
+        return self.repo_stats.compare_repositories(
+            list(self.contributors.values()),
+            repo_names
+        )
+    
+    def get_trending_repositories(self, days: int = 7, limit: int = 5) -> List[Dict[str, Any]]:
+        """
+        Get trending repositories.
+        
+        Args:
+            days (int): Days to consider
+            limit (int): Number of repositories
+            
+        Returns:
+            List[Dict[str, Any]]: Trending repositories
+        """
+        return self.repo_stats.get_trending_repositories(
+            list(self.contributors.values()),
+            days,
+            limit
+        )
+    
+    def get_repository_health(self, repo_name: str) -> Dict[str, Any]:
+        """
+        Get health assessment for a repository.
+        
+        Args:
+            repo_name (str): Repository name
+            
+        Returns:
+            Dict[str, Any]: Health assessment
+        """
+        return self.repo_stats.get_repository_health(
+            list(self.contributors.values()),
+            repo_name
+        )
+    
+    def print_repository_stats(self, repo_name: str = None) -> None:
+        """
+        Print repository statistics.
+        
+        Args:
+            repo_name (str): Repository to show stats for (all if None)
+        """
+        if repo_name:
+            stats = self.get_repository_stats(repo_name)
+            print(f"\n📦 Repository Statistics: {repo_name} 📦")
+            print("=" * 70)
+            print(f"Total Contributions: {stats['total_contributions']}")
+            print(f"Unique Contributors: {stats['unique_contributors']}")
+            print(f"Avg per Contributor: {stats['avg_contributions_per_contributor']:.2f}")
+            print(f"Pull Requests: {stats['pull_requests_count']} ({stats['pull_request_percentage']:.1f}%)")
+            print(f"Activity Score: {stats['activity_score']:.1f}/100")
+            print(f"Health Status: {stats['health_status']}")
+            print(f"Active Days: {stats['days_active']}/{stats['date_range']['days_span']}")
+            
+            if stats['contribution_types']:
+                print("\nContribution Types:")
+                for ctype, count in sorted(stats['contribution_types'].items(), 
+                                          key=lambda x: x[1], reverse=True):
+                    print(f"  • {ctype}: {count}")
+            
+            if stats['top_contributors']:
+                print("\nTop Contributors:")
+                for i, contributor in enumerate(stats['top_contributors'], 1):
+                    print(f"  {i}. @{contributor['username']}: {contributor['contributions']} ({contributor['percentage']:.1f}%)")
+        else:
+            all_stats = self.get_all_repository_stats()
+            top_repos = self.get_top_repositories(limit=len(all_stats))
+            
+            print(f"\n📦 Repository Overview ({len(all_stats)} repositories) 📦")
+            print("=" * 70)
+            
+            for repo_name, stats in top_repos:
+                print(f"  {repo_name}")
+                print(f"    Contributions: {stats['total_contributions']} | Contributors: {stats['unique_contributors']} | Activity: {stats['activity_score']:.1f}/100")
+    
+    def print_trending_repositories(self, days: int = 7, limit: int = 5) -> None:
+        """
+        Print trending repositories.
+        
+        Args:
+            days (int): Days to consider
+            limit (int): Number to show
+        """
+        trending = self.get_trending_repositories(days, limit)
+        print(f"\n🔥 Trending Repositories (Last {days} days) 🔥")
+        print("=" * 70)
+        
+        for i, repo in enumerate(trending, 1):
+            print(f"  {i}. {repo['repo_name']}")
+            print(f"     Recent Contributions: {repo['recent_contributions']} | Contributors: {repo['recent_contributors']}")
+            print(f"     Trend Score: {repo['trend_score']} | Last Activity: {repo['last_activity']}")
+    
+    def print_repository_comparison(self, repo_names: List[str]) -> None:
+        """
+        Print comparison of repositories.
+        
+        Args:
+            repo_names (List[str]): Repositories to compare
+        """
+        if len(repo_names) < 2:
+            print("❌ Please provide at least 2 repositories to compare")
+            return
+        
+        comparison = self.compare_repositories(repo_names)
+        
+        print(f"\n📊 Repository Comparison 📊")
+        print("=" * 70)
+        
+        # Print metrics table
+        for metric_name, values in comparison["metrics"].items():
+            print(f"\n{metric_name.replace('_', ' ').title()}:")
+            for repo_name, value in sorted(values.items(), key=lambda x: x[1], reverse=True):
+                rank = comparison["rankings"][metric_name].get(repo_name, "N/A")
+                print(f"  {rank}. {repo_name}: {value:.2f}")
+    
+    def print_repository_health(self, repo_name: str) -> None:
+        """
+        Print health assessment for a repository.
+        
+        Args:
+            repo_name (str): Repository name
+        """
+        health = self.get_repository_health(repo_name)
+        
+        status_emoji = {
+            "healthy": "✅",
+            "good": "✓",
+            "moderate": "⚠️",
+            "needs_attention": "❌"
+        }
+        
+        emoji = status_emoji.get(health["status"], "❓")
+        
+        print(f"\n{emoji} Repository Health: {repo_name} {emoji}")
+        print("=" * 70)
+        print(f"Overall Score: {health['overall_score']}/100 ({health['status'].replace('_', ' ').title()})")
+        
+        print("\nHealth Metrics:")
+        for metric, level in health["metrics"].items():
+            print(f"  • {metric.replace('_', ' ').title()}: {level}")
+        
+        if health["warnings"]:
+            print("\n⚠️  Warnings:")
+            for warning in health["warnings"]:
+                print(f"  • {warning}")
+        
+        if health["recommendations"]:
+            print("\n💡 Recommendations:")
+            for rec in health["recommendations"]:
+                print(f"  • {rec}")
     
     def __str__(self) -> str:
         """String representation of the project tracker."""
