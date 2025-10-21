@@ -10,6 +10,7 @@ from .contributor import Contributor
 from .email_notifier import EmailNotifier
 from .performance_metrics import PerformanceMetrics
 from .csv_handler import CSVHandler
+from .search_engine import SearchEngine, SearchType, SortOrder
 
 
 class ProjectTracker:
@@ -46,6 +47,9 @@ class ProjectTracker:
         
         # Initialize performance metrics analyzer
         self.metrics_analyzer = PerformanceMetrics()
+        
+        # Initialize search engine
+        self.search_engine = SearchEngine()
         
         self.load_data()
     
@@ -597,6 +601,183 @@ class ProjectTracker:
             bool: True if successful
         """
         return CSVHandler.save_csv_template(template_type, filename)
+    
+    # ========================= SEARCH AND FILTER METHODS =========================
+    
+    def search_contributors(self,
+                           query: str = "",
+                           search_type: SearchType = SearchType.CONTAINS,
+                           search_field: str = "all",
+                           case_sensitive: bool = False) -> List[Contributor]:
+        """
+        Search for contributors.
+        
+        Args:
+            query (str): Search query
+            search_type (SearchType): Type of search
+            search_field (str): Field to search in ('name', 'username', 'email', 'all')
+            case_sensitive (bool): Case-sensitive search
+            
+        Returns:
+            List[Contributor]: Matching contributors
+        """
+        return self.search_engine.search_contributors(
+            list(self.contributors.values()),
+            query,
+            search_type,
+            search_field,
+            case_sensitive
+        )
+    
+    def filter_contributors(self,
+                           min_contributions: int = None,
+                           max_contributions: int = None,
+                           completed_only: bool = False,
+                           has_email: bool = None,
+                           joined_after: datetime = None,
+                           joined_before: datetime = None,
+                           contribution_type: str = None) -> List[Contributor]:
+        """
+        Filter contributors by criteria.
+        
+        Args:
+            min_contributions (int): Minimum contributions
+            max_contributions (int): Maximum contributions
+            completed_only (bool): Only completed
+            has_email (bool): Must have email
+            joined_after (datetime): Joined after
+            joined_before (datetime): Joined before
+            contribution_type (str): Contribution type
+            
+        Returns:
+            List[Contributor]: Filtered contributors
+        """
+        return self.search_engine.filter_contributors(
+            list(self.contributors.values()),
+            min_contributions,
+            max_contributions,
+            completed_only,
+            has_email,
+            joined_after,
+            joined_before,
+            contribution_type
+        )
+    
+    def search_contributions(self,
+                            query: str = "",
+                            search_in: str = "all",
+                            case_sensitive: bool = False) -> List[Dict[str, Any]]:
+        """
+        Search across all contributions.
+        
+        Args:
+            query (str): Search query
+            search_in (str): Search in ('description', 'repo', 'type', 'all')
+            case_sensitive (bool): Case-sensitive search
+            
+        Returns:
+            List[Dict[str, Any]]: Matching contributions with contributor info
+        """
+        return self.search_engine.search_contributions(
+            list(self.contributors.values()),
+            query,
+            search_in,
+            case_sensitive
+        )
+    
+    def filter_contributions(self,
+                            contribution_type: str = None,
+                            repo_name: str = None,
+                            after_date: datetime = None,
+                            before_date: datetime = None,
+                            has_pr: bool = None,
+                            contributor_username: str = None) -> List[Dict[str, Any]]:
+        """
+        Filter contributions by criteria.
+        
+        Args:
+            contribution_type (str): Filter by type
+            repo_name (str): Filter by repository
+            after_date (datetime): After this date
+            before_date (datetime): Before this date
+            has_pr (bool): Has PR number
+            contributor_username (str): From specific contributor
+            
+        Returns:
+            List[Dict[str, Any]]: Filtered contributions
+        """
+        return self.search_engine.filter_contributions(
+            list(self.contributors.values()),
+            contribution_type,
+            repo_name,
+            after_date,
+            before_date,
+            has_pr,
+            contributor_username
+        )
+    
+    def advanced_search(self,
+                       filters: Dict[str, Any],
+                       sort_by: str = "name",
+                       sort_order: SortOrder = SortOrder.ASCENDING) -> List[Contributor]:
+        """
+        Perform advanced search with multiple filters.
+        
+        Args:
+            filters (Dict[str, Any]): Filters dictionary
+            sort_by (str): Sort by field
+            sort_order (SortOrder): Sort order
+            
+        Returns:
+            List[Contributor]: Filtered and sorted contributors
+        """
+        return self.search_engine.advanced_search(
+            list(self.contributors.values()),
+            filters,
+            sort_by,
+            sort_order
+        )
+    
+    def sort_contributors(self,
+                         contributors: List[Contributor] = None,
+                         sort_by: str = "name",
+                         order: SortOrder = SortOrder.ASCENDING) -> List[Contributor]:
+        """
+        Sort contributors.
+        
+        Args:
+            contributors (List[Contributor]): Contributors to sort (uses all if None)
+            sort_by (str): Field to sort by
+            order (SortOrder): Sort order
+            
+        Returns:
+            List[Contributor]: Sorted contributors
+        """
+        if contributors is None:
+            contributors = list(self.contributors.values())
+        
+        return self.search_engine.sort_contributors(contributors, sort_by, order)
+    
+    def get_search_statistics(self) -> Dict[str, Any]:
+        """
+        Get search and filter statistics.
+        
+        Returns:
+            Dict[str, Any]: Statistics
+        """
+        return self.search_engine.get_statistics(list(self.contributors.values()))
+    
+    def get_quick_search_stats(self, search_results: List[Contributor]) -> Dict[str, Any]:
+        """
+        Get quick statistics for search results.
+        
+        Args:
+            search_results (List[Contributor]): Search results
+            
+        Returns:
+            Dict[str, Any]: Statistics
+        """
+        return self.search_engine.get_quick_stats(search_results)
     
     def __str__(self) -> str:
         """String representation of the project tracker."""
