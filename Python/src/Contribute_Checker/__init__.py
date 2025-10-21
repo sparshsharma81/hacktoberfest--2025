@@ -14,6 +14,7 @@ from .performance_metrics import PerformanceMetrics
 from .metrics_visualizer import MetricsVisualizer
 from .csv_handler import CSVHandler
 from .search_engine import SearchEngine, SearchType, SortOrder
+from .backup_engine import BackupEngine, BackupType, BackupFormat
 
 __all__ = [
     "Contributor",
@@ -25,7 +26,5 @@ __all__ = [
     "SearchEngine",
     "SearchType",
     "SortOrder"
-    "CSVHandler"
 ]
 
-__all__ = ["Contributor", "ProjectTracker", "EmailNotifier", "PerformanceMetrics", "MetricsVisualizer"]

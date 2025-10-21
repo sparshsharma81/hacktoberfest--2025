@@ -11,6 +11,7 @@ from .email_notifier import EmailNotifier
 from .performance_metrics import PerformanceMetrics
 from .csv_handler import CSVHandler
 from .search_engine import SearchEngine, SearchType, SortOrder
+from .backup_engine import BackupEngine, BackupType, BackupFormat
 
 
 class ProjectTracker:
@@ -50,6 +51,9 @@ class ProjectTracker:
         
         # Initialize search engine
         self.search_engine = SearchEngine()
+        
+        # Initialize backup engine
+        self.backup_engine = BackupEngine(backup_dir="backups", data_file=data_file)
         
         self.load_data()
     
