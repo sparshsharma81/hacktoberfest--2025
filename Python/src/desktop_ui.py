@@ -25,19 +25,14 @@ class HacktoberfestDesktopUI:
         self.style.configure("Title.TLabel", font=("Helvetica", 16, "bold"))
         self.style.configure("Header.TLabel", font=("Helvetica", 12, "bold"))
         self.style.configure("Stats.TLabel", font=("Helvetica", 10))
-        # Primary button style (modern blue)
-        # Note: ttk on Windows uses native theme; to ensure color works we'll set relief and focuscolor where supported
-        primary_bg = "#1f6feb"
-        primary_fg = "#ffffff"
-        self.style.configure("Primary.TButton",
-                             background=primary_bg,
-                             foreground=primary_fg,
-                             relief="flat",
-                             padding=6)
-        # Map active and pressed states to slightly different shades
-        self.style.map("Primary.TButton",
-                       background=[('active', '#155ed1'), ('pressed', '#134fb3')],
-                       foreground=[('disabled', '#dddddd')])
+        # Treeview / leaderboard styles
+        # Heading color (may be theme-dependent on Windows)
+        try:
+            self.style.configure("Treeview.Heading", background="#1f6feb", foreground="#ffffff", font=("Helvetica", 10, "bold"))
+            self.style.configure("Treeview", rowheight=24, font=("Helvetica", 10))
+        except Exception:
+            # Some themes may restrict heading styling; ignore failures
+            pass
         
     def create_menu(self):
         from menu_system import MenuSystem
@@ -305,6 +300,15 @@ class HacktoberfestDesktopUI:
             command=self.leaderboard_tree.yview
         )
         self.leaderboard_tree.configure(yscrollcommand=scrollbar.set)
+
+        # Configure alternating row colors and a special top-row highlight
+        # Tag configuration on Treeview controls row background colors
+        try:
+            self.leaderboard_tree.tag_configure('even', background='#eef6ff')
+            self.leaderboard_tree.tag_configure('odd', background='#ffffff')
+            self.leaderboard_tree.tag_configure('top', background='#fff8dc')
+        except Exception:
+            pass
         
         self.leaderboard_tree.pack(side='left', fill='both', expand=True)
         scrollbar.pack(side='right', fill='y')
@@ -455,46 +459,7 @@ class HacktoberfestDesktopUI:
         # Get rankings based on sort criteria
         rankings = self.tracker.get_contributors_ranking()
         
-        # Update stat cards
-        if rankings:
-            top_contributor = rankings[0]
-            self.top_contributor_var.set(
-                f"{top_contributor['username']}\n{top_contributor['engagement_score']:.1f} pts"
-            )
-            
-            # Find longest streak
-            max_streak = 0
-            streak_holder = ""
-            for rank in rankings:
-                metrics = self.tracker.get_contributor_metrics(rank['username'])
-                if metrics['contribution_streak'] > max_streak:
-                    max_streak = metrics['contribution_streak']
-                    streak_holder = rank['username']
-            
-            self.longest_streak_var.set(
-                f"{streak_holder}\n{max_streak} days"
-            )
-            
-            # Find most badges
-            max_badges = 0
-            badge_holder = ""
-            for rank in rankings:
-                metrics = self.tracker.get_contributor_metrics(rank['username'])
-                badges = 0
-                if metrics['hacktoberfest_complete']:
-                    badges += 1
-                if metrics['contribution_streak'] >= 3:
-                    badges += 1
-                if badges > max_badges:
-                    max_badges = badges
-                    badge_holder = rank['username']
-            
-            self.most_badges_var.set(
-                f"{badge_holder}\n{max_badges} badges"
-            )
-        
-        # Populate table
-        for rank in rankings:
+        for i, rank in enumerate(rankings, start=1):
             metrics = self.tracker.get_contributor_metrics(rank['username'])
             
             # Calculate badges
@@ -502,22 +467,26 @@ class HacktoberfestDesktopUI:
             if metrics['hacktoberfest_complete']:
                 badges.append("🏆")
             if metrics['contribution_streak'] >= 3:
-                badges.append("🔥")
-            if metrics['total_contributions'] >= 10:
-                badges.append("⭐")
-            
+                badges += "🔥"
+
+            # Choose tag: top (first), even/odd for alternating rows
+            if i == 1:
+                tag = 'top'
+            else:
+                tag = 'even' if i % 2 == 0 else 'odd'
+
             self.leaderboard_tree.insert(
                 "",
                 "end",
                 values=(
-                    rank['rank'],
+                    i,
                     rank['username'],
                     f"{rank['engagement_score']:.1f}",
                     metrics['total_contributions'],
                     f"{metrics['contribution_streak']} days",
-                    metrics['days_active'],
-                    " ".join(badges)
-                )
+                    badges
+                ),
+                tags=(tag,)
             )
 
     def filter_contributors(self, *args):
