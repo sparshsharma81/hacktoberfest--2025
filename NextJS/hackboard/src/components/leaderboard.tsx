@@ -257,8 +257,6 @@ export default function Leaderboard() {
     const [error, setError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [minMergedPRs, setMinMergedPRs] = useState<number>(0);
-    const [sortKey, setSortKey] = useState<"mergedPRs" | "totalPRs" | "commits" | "additions" | "deletions">("mergedPRs");
-    const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
 
     useEffect(() => {
         const fetchContributors = async () => {
@@ -338,73 +336,8 @@ export default function Leaderboard() {
         return matchesQuery && meetsMinMerged;
     });
 
-    const sortedContributors = [...filteredContributors].sort((a, b) => {
-        const dir = sortOrder === "asc" ? 1 : -1;
-        const av = a[sortKey];
-        const bv = b[sortKey];
-        if (av === bv) return 0;
-        return av > bv ? dir : -dir;
-    });
-
-    const downloadBlob = (content: string, filename: string, mime: string) => {
-        const blob = new Blob([content], { type: mime });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-    };
-
-    const toCSV = (rows: Contributor[]) => {
-        const headers = [
-            'rank', 'username', 'mergedPRs', 'totalPRs', 'additions', 'deletions', 'commits', 'profileUrl'
-        ];
-        const escape = (val: string | number) => {
-            const s = String(val ?? '');
-            if (/[",\n]/.test(s)) {
-                return '"' + s.replace(/"/g, '""') + '"';
-            }
-            return s;
-        };
-        const lines = [headers.join(',')].concat(
-            rows.map(r => [
-                r.rank,
-                r.username,
-                r.mergedPRs,
-                r.totalPRs,
-                r.additions,
-                r.deletions,
-                r.commits,
-                r.profileUrl,
-            ].map(escape).join(','))
-        );
-        return lines.join('\n');
-    };
-
-    const handleExportCSV = () => {
-        const csv = toCSV(sortedContributors);
-        downloadBlob(csv, 'leaderboard.csv', 'text/csv;charset=utf-8;');
-    };
-
-    const handleExportJSON = () => {
-        const data = sortedContributors.map(({ id, ...rest }) => rest);
-        downloadBlob(JSON.stringify(data, null, 2), 'leaderboard.json', 'application/json;charset=utf-8;');
-    };
-
-    // Calculate statistics
-    const totalContributors = contributors.length;
-    const totalMergedPRs = contributors.reduce((sum, c) => sum + c.mergedPRs, 0);
-    const totalAdditions = contributors.reduce((sum, c) => sum + c.additions, 0);
-    const totalDeletions = contributors.reduce((sum, c) => sum + c.deletions, 0);
-    const totalCommits = contributors.reduce((sum, c) => sum + c.commits, 0);
-    const averageMergedPRs = totalContributors > 0 ? (totalMergedPRs / totalContributors).toFixed(1) : '0';
-    const topContributor = contributors.length > 0 ? contributors[0] : null;
-
-    const topThree = sortedContributors.slice(0, 3);
-    const others = sortedContributors.slice(3);
+    const topThree = filteredContributors.slice(0, 3);
+    const others = filteredContributors.slice(3);
 
     return (
         <div className="min-h-screen bg-background p-6">
@@ -437,7 +370,7 @@ export default function Leaderboard() {
 
                 {/* Filters */}
                 <div className="mb-12">
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="col-span-1">
                             <label className="block text-sm font-medium text-muted-foreground mb-1">Search by username</label>
                             <input
@@ -464,127 +397,19 @@ export default function Leaderboard() {
                                 <option value={6}>6</option>
                             </select>
                         </div>
-                        <div className="col-span-1">
-                            <label className="block text-sm font-medium text-muted-foreground mb-1">Sort by</label>
-                            <select
-                                value={sortKey}
-                                onChange={(e) => setSortKey(e.target.value as any)}
-                                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            >
-                                <option value="mergedPRs">Merged PRs</option>
-                                <option value="totalPRs">Total PRs</option>
-                                <option value="commits">Commits</option>
-                                <option value="additions">Additions</option>
-                                <option value="deletions">Deletions</option>
-                            </select>
-                        </div>
-                        <div className="col-span-1">
-                            <label className="block text-sm font-medium text-muted-foreground mb-1">Order</label>
-                            <select
-                                value={sortOrder}
-                                onChange={(e) => setSortOrder(e.target.value as any)}
-                                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            >
-                                <option value="desc">High → Low</option>
-                                <option value="asc">Low → High</option>
-                            </select>
-                        </div>
                         <div className="col-span-1 flex items-end">
                             <Button
                                 className="bg-blue-600 hover:bg-blue-700 text-white w-full"
                                 onClick={() => {
                                     setSearchQuery("");
                                     setMinMergedPRs(0);
-                                    setSortKey("mergedPRs");
-                                    setSortOrder("desc");
                                 }}
                             >
                                 Clear filters
                             </Button>
                         </div>
                     </div>
-                    <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-                        <p className="text-sm text-muted-foreground">Export current view (sorted & filtered)</p>
-                        <div className="flex gap-3">
-                            <Button onClick={handleExportCSV} className="bg-blue-600 hover:bg-blue-700 text-white">
-                                <Download className="h-4 w-4 mr-2" /> Export CSV
-                            </Button>
-                            <Button onClick={handleExportJSON} variant="outline">
-                                <Download className="h-4 w-4 mr-2" /> Export JSON
-                            </Button>
-                        </div>
-                    </div>
                 </div>
-
-                {/* Statistics Dashboard */}
-                {contributors.length > 0 && (
-                    <div className="mb-12">
-                        <h2 className="text-2xl font-bold mb-6 text-center">📊 Project Statistics</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            {/* Total Contributors */}
-                            <Card className="border-blue-200">
-                                <CardHeader className="pb-3">
-                                    <div className="flex items-center justify-between">
-                                        <CardTitle className="text-sm font-medium text-muted-foreground">Total Contributors</CardTitle>
-                                        <Users className="h-5 w-5 text-blue-600" />
-                                    </div>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="text-3xl font-bold text-blue-600">{totalContributors}</div>
-                                    <p className="text-xs text-muted-foreground mt-1">Active developers</p>
-                                </CardContent>
-                            </Card>
-
-                            {/* Total Merged PRs */}
-                            <Card className="border-green-200">
-                                <CardHeader className="pb-3">
-                                    <div className="flex items-center justify-between">
-                                        <CardTitle className="text-sm font-medium text-muted-foreground">Merged PRs</CardTitle>
-                                        <GitBranch className="h-5 w-5 text-green-600" />
-                                    </div>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="text-3xl font-bold text-green-600">{totalMergedPRs}</div>
-                                    <p className="text-xs text-muted-foreground mt-1">Avg {averageMergedPRs} per contributor</p>
-                                </CardContent>
-                            </Card>
-
-                            {/* Code Changes */}
-                            <Card className="border-purple-200">
-                                <CardHeader className="pb-3">
-                                    <div className="flex items-center justify-between">
-                                        <CardTitle className="text-sm font-medium text-muted-foreground">Code Changes</CardTitle>
-                                        <FileCode className="h-5 w-5 text-purple-600" />
-                                    </div>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="text-3xl font-bold text-purple-600">
-                                        {totalAdditions > 0 ? '+' : ''}{totalAdditions.toLocaleString()}
-                                    </div>
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                        {totalDeletions > 0 && `-${totalDeletions.toLocaleString()} deletions`}
-                                    </p>
-                                </CardContent>
-                            </Card>
-
-                            {/* Total Commits */}
-                            <Card className="border-orange-200">
-                                <CardHeader className="pb-3">
-                                    <div className="flex items-center justify-between">
-                                        <CardTitle className="text-sm font-medium text-muted-foreground">Total Commits</CardTitle>
-                                        <TrendingUp className="h-5 w-5 text-orange-600" />
-                                    </div>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="text-3xl font-bold text-orange-600">{totalCommits.toLocaleString()}</div>
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                        {topContributor && `Top: @${topContributor.username}`}
-                                    </p>
-                                </CardContent>
-                            </Card>
-                        </div>
-                    </div>
-                )}
 
                 {contributors.length === 0 ? (
                     <div className="text-center py-12">
