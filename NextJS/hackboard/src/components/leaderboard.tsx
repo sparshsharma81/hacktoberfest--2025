@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Trophy, Medal, Award, ExternalLink, GitPullRequest, Clock, Code, Loader2, Users, TrendingUp, GitBranch, FileCode, Download } from "lucide-react";
+import { Trophy, Medal, Award, ExternalLink, GitPullRequest, Clock, Code, Loader2, Users, TrendingUp, GitBranch, FileCode } from "lucide-react";
 
 interface Contributor {
     id: number;
@@ -336,6 +336,15 @@ export default function Leaderboard() {
         return matchesQuery && meetsMinMerged;
     });
 
+    // Calculate statistics
+    const totalContributors = contributors.length;
+    const totalMergedPRs = contributors.reduce((sum, c) => sum + c.mergedPRs, 0);
+    const totalAdditions = contributors.reduce((sum, c) => sum + c.additions, 0);
+    const totalDeletions = contributors.reduce((sum, c) => sum + c.deletions, 0);
+    const totalCommits = contributors.reduce((sum, c) => sum + c.commits, 0);
+    const averageMergedPRs = totalContributors > 0 ? (totalMergedPRs / totalContributors).toFixed(1) : '0';
+    const topContributor = contributors.length > 0 ? contributors[0] : null;
+
     const topThree = filteredContributors.slice(0, 3);
     const others = filteredContributors.slice(3);
 
@@ -410,6 +419,76 @@ export default function Leaderboard() {
                         </div>
                     </div>
                 </div>
+
+                {/* Statistics Dashboard */}
+                {contributors.length > 0 && (
+                    <div className="mb-12">
+                        <h2 className="text-2xl font-bold mb-6 text-center">📊 Project Statistics</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {/* Total Contributors */}
+                            <Card className="border-blue-200">
+                                <CardHeader className="pb-3">
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle className="text-sm font-medium text-muted-foreground">Total Contributors</CardTitle>
+                                        <Users className="h-5 w-5 text-blue-600" />
+                                    </div>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-3xl font-bold text-blue-600">{totalContributors}</div>
+                                    <p className="text-xs text-muted-foreground mt-1">Active developers</p>
+                                </CardContent>
+                            </Card>
+
+                            {/* Total Merged PRs */}
+                            <Card className="border-green-200">
+                                <CardHeader className="pb-3">
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle className="text-sm font-medium text-muted-foreground">Merged PRs</CardTitle>
+                                        <GitBranch className="h-5 w-5 text-green-600" />
+                                    </div>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-3xl font-bold text-green-600">{totalMergedPRs}</div>
+                                    <p className="text-xs text-muted-foreground mt-1">Avg {averageMergedPRs} per contributor</p>
+                                </CardContent>
+                            </Card>
+
+                            {/* Code Changes */}
+                            <Card className="border-purple-200">
+                                <CardHeader className="pb-3">
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle className="text-sm font-medium text-muted-foreground">Code Changes</CardTitle>
+                                        <FileCode className="h-5 w-5 text-purple-600" />
+                                    </div>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-3xl font-bold text-purple-600">
+                                        {totalAdditions > 0 ? '+' : ''}{totalAdditions.toLocaleString()}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        {totalDeletions > 0 && `-${totalDeletions.toLocaleString()} deletions`}
+                                    </p>
+                                </CardContent>
+                            </Card>
+
+                            {/* Total Commits */}
+                            <Card className="border-orange-200">
+                                <CardHeader className="pb-3">
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle className="text-sm font-medium text-muted-foreground">Total Commits</CardTitle>
+                                        <TrendingUp className="h-5 w-5 text-orange-600" />
+                                    </div>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-3xl font-bold text-orange-600">{totalCommits.toLocaleString()}</div>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        {topContributor && `Top: @${topContributor.username}`}
+                                    </p>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </div>
+                )}
 
                 {contributors.length === 0 ? (
                     <div className="text-center py-12">
