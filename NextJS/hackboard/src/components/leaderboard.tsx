@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Trophy, Medal, Award, ExternalLink, GitPullRequest, Clock, Code, Loader2, Users, TrendingUp, GitBranch, FileCode } from "lucide-react";
+import { Trophy, Medal, Award, ExternalLink, GitPullRequest, Clock, Code, Loader2, Users, TrendingUp, GitBranch, FileCode, Download } from "lucide-react";
 
 interface Contributor {
     id: number;
@@ -346,6 +346,54 @@ export default function Leaderboard() {
         return av > bv ? dir : -dir;
     });
 
+    const downloadBlob = (content: string, filename: string, mime: string) => {
+        const blob = new Blob([content], { type: mime });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    };
+
+    const toCSV = (rows: Contributor[]) => {
+        const headers = [
+            'rank', 'username', 'mergedPRs', 'totalPRs', 'additions', 'deletions', 'commits', 'profileUrl'
+        ];
+        const escape = (val: string | number) => {
+            const s = String(val ?? '');
+            if (/[",\n]/.test(s)) {
+                return '"' + s.replace(/"/g, '""') + '"';
+            }
+            return s;
+        };
+        const lines = [headers.join(',')].concat(
+            rows.map(r => [
+                r.rank,
+                r.username,
+                r.mergedPRs,
+                r.totalPRs,
+                r.additions,
+                r.deletions,
+                r.commits,
+                r.profileUrl,
+            ].map(escape).join(','))
+        );
+        return lines.join('\n');
+    };
+
+    const handleExportCSV = () => {
+        const csv = toCSV(sortedContributors);
+        downloadBlob(csv, 'leaderboard.csv', 'text/csv;charset=utf-8;');
+    };
+
+    const handleExportJSON = () => {
+        const data = sortedContributors.map(({ id, ...rest }) => rest);
+        downloadBlob(JSON.stringify(data, null, 2), 'leaderboard.json', 'application/json;charset=utf-8;');
+    };
+
     // Calculate statistics
     const totalContributors = contributors.length;
     const totalMergedPRs = contributors.reduce((sum, c) => sum + c.mergedPRs, 0);
@@ -452,6 +500,17 @@ export default function Leaderboard() {
                                 }}
                             >
                                 Clear filters
+                            </Button>
+                        </div>
+                    </div>
+                    <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+                        <p className="text-sm text-muted-foreground">Export current view (sorted & filtered)</p>
+                        <div className="flex gap-3">
+                            <Button onClick={handleExportCSV} className="bg-blue-600 hover:bg-blue-700 text-white">
+                                <Download className="h-4 w-4 mr-2" /> Export CSV
+                            </Button>
+                            <Button onClick={handleExportJSON} variant="outline">
+                                <Download className="h-4 w-4 mr-2" /> Export JSON
                             </Button>
                         </div>
                     </div>
