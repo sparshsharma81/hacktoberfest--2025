@@ -8,6 +8,33 @@ import os
 from Contribute_Checker import ProjectTracker
 from Contribute_Checker.metrics_visualizer import MetricsVisualizer
 
+# --- Achievement System ---
+ACHIEVEMENTS = [
+    {"id": "first_contribution", "name": "First Contribution", "desc": "Made your first contribution!", "emoji": "🥇"},
+    {"id": "four_contributions", "name": "Hacktoberfest Complete", "desc": "Made 4+ contributions!", "emoji": "🏆"},
+    {"id": "streak_3", "name": "3-Day Streak", "desc": "Contributed 3 days in a row!", "emoji": "🔥"},
+    {"id": "doc_star", "name": "Documentation Star", "desc": "Made a documentation contribution!", "emoji": "📚"},
+]
+
+def get_achievements_for_contributor(contributor):
+    achievements = []
+    if contributor.get_contribution_count() >= 1:
+        achievements.append(ACHIEVEMENTS[0])
+    if contributor.get_contribution_count() >= 4:
+        achievements.append(ACHIEVEMENTS[1])
+    # Streak logic (simple: contributed on 3 consecutive days)
+    dates = [c["date"][:10] for c in contributor.contributions]
+    if len(dates) >= 3:
+        date_objs = sorted(set(datetime.strptime(d, "%Y-%m-%d") for d in dates))
+        for i in range(len(date_objs) - 2):
+            if (date_objs[i+1] - date_objs[i]).days == 1 and (date_objs[i+2] - date_objs[i+1]).days == 1:
+                achievements.append(ACHIEVEMENTS[2])
+                break
+    # Documentation contribution
+    if any(c["type"] == "documentation" for c in contributor.contributions):
+        achievements.append(ACHIEVEMENTS[3])
+    return achievements
+
 class HacktoberfestDesktopUI:
     # Theme colors
     LIGHT_THEME = {
@@ -491,11 +518,9 @@ class HacktoberfestDesktopUI:
             
             # Calculate badges
             badges = []
-            if metrics['hacktoberfest_complete']:
-                badges.append("🏆")
-            if metrics['contribution_streak'] >= 3:
-                badges += "🔥"
-
+            achievements = get_achievements_for_contributor(self.tracker.get_contributor(rank['username']))
+            badges = [a['emoji'] for a in achievements]
+            
             # Choose tag: top (first), even/odd for alternating rows
             if i == 1:
                 tag = 'top'
@@ -735,8 +760,14 @@ class HacktoberfestDesktopUI:
             ttk.Label(details_frame, text=str(value)).grid(
                 row=i, column=1, sticky='w', padx=5, pady=2
             )
-
-
+        
+        # Achievements section
+        achievements = get_achievements_for_contributor(contributor)
+        if achievements:
+            ach_frame = ttk.LabelFrame(detail_window, text="Achievements")
+            ach_frame.pack(fill='x', padx=10, pady=10)
+            for ach in achievements:
+                ttk.Label(ach_frame, text=f"{ach['emoji']} {ach['name']}: {ach['desc']}", style="Stats.TLabel").pack(anchor='w', padx=5, pady=2)
 
     def export_contributors_to_csv(self):
         """Export contributors data to a CSV file"""
