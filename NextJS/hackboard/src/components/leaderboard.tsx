@@ -228,7 +228,7 @@ const PodiumCard = ({ contributor }: { contributor: Contributor }) => {
                 <div className="mt-2">
                     <Button
                         variant="outline"
-                        className="h-8 px-2 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                        className="h-8 px-2 text-xs bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-800 text-white"
                         onClick={() => {
                             const url = getLeaderboardShareLink(contributor.username);
                             const text = getShareText({
@@ -302,6 +302,7 @@ export default function Leaderboard() {
     const [error, setError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [minMergedPRs, setMinMergedPRs] = useState<number>(0);
+    const [theme, setTheme] = useState<"light" | "dark">("light");
     const [showColumnMenu, setShowColumnMenu] = useState(false);
     const defaultVisibleColumns = {
         rank: true,
@@ -495,7 +496,7 @@ export default function Leaderboard() {
                             <div className="relative">
                                 <Button
                                     variant="outline"
-                                    className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white"
+                                    className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-800 text-white"
                                     onClick={() => setShowColumnMenu((v) => !v)}
                                 >
                                     Columns
