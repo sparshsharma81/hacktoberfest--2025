@@ -1,12 +1,134 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import json
-import csv
-from datetime import datetime
+from datetime import datetime, timedelta
 import webbrowser
 import os
 from Contribute_Checker import ProjectTracker
 from Contribute_Checker.metrics_visualizer import MetricsVisualizer
+import calendar
+
+class ContributionGraph(tk.Canvas):
+    def __init__(self, parent, **kwargs):
+        super().__init__(parent, **kwargs)
+        self.cell_size = 15
+        self.cell_padding = 2
+        self.week_days = 7
+        self.num_weeks = 52
+        self.colors = [
+            "#ebedf0",  # No contributions
+            "#9be9a8",  # Level 1
+            "#40c463",  # Level 2
+            "#30a14e",  # Level 3
+            "#216e39"   # Level 4
+        ]
+        self.setup_grid()
+        self.create_legend()
+        self.bind("<Motion>", self.show_tooltip)
+        self._tooltip_window = None
+
+    def setup_grid(self):
+        """Create the initial empty grid"""
+        self.cells = {}
+        for week in range(self.num_weeks):
+            for day in range(self.week_days):
+                x = week * (self.cell_size + self.cell_padding)
+                y = day * (self.cell_size + self.cell_padding)
+                cell = self.create_rectangle(
+                    x, y,
+                    x + self.cell_size,
+                    y + self.cell_size,
+                    fill=self.colors[0],
+                    outline="#e1e4e8"
+                )
+                self.cells[(week, day)] = cell
+
+    def create_legend(self):
+        """Create contribution level legend"""
+        legend_y = (self.week_days + 1) * (self.cell_size + self.cell_padding)
+        self.create_text(10, legend_y, text="Less", anchor="w")
+        
+        for i, color in enumerate(self.colors):
+            x = 50 + i * (self.cell_size + self.cell_padding)
+            self.create_rectangle(
+                x, legend_y - self.cell_size/2,
+                x + self.cell_size, legend_y + self.cell_size/2,
+                fill=color, outline="#e1e4e8"
+            )
+        
+        self.create_text(
+            50 + len(self.colors) * (self.cell_size + self.cell_padding) + 10,
+            legend_y,
+            text="More",
+            anchor="w"
+        )
+
+    def update_data(self, contribution_data):
+        """Update the graph with new contribution data"""
+        # Reset all cells to no contributions
+        for cell in self.cells.values():
+            self.itemconfig(cell, fill=self.colors[0])
+        
+        if not contribution_data:
+            return
+
+        # Calculate max contributions to determine color levels
+        max_contributions = max(contribution_data.values())
+        if max_contributions == 0:
+            return
+
+        thresholds = [0, max_contributions/4, max_contributions/2, max_contributions*3/4, max_contributions]
+        
+        # Update cells based on contribution data
+        today = datetime.now()
+        for week in range(self.num_weeks):
+            for day in range(self.week_days):
+                date = today - timedelta(days=(self.num_weeks - week - 1) * 7 + (6 - day))
+                date_str = date.strftime("%Y-%m-%d")
+                
+                if date_str in contribution_data:
+                    contributions = contribution_data[date_str]
+                    # Determine color level based on contribution count
+                    color_idx = 0
+                    for i, threshold in enumerate(thresholds):
+                        if contributions > threshold:
+                            color_idx = i
+                    self.itemconfig(self.cells[(week, day)], fill=self.colors[color_idx])
+
+    def show_tooltip(self, event):
+        """Show tooltip with contribution info when hovering over a cell"""
+        x, y = event.x, event.y
+        week = x // (self.cell_size + self.cell_padding)
+        day = y // (self.cell_size + self.cell_padding)
+        
+        if (week, day) in self.cells and y < self.week_days * (self.cell_size + self.cell_padding):
+            if self._tooltip_window:
+                self._tooltip_window.destroy()
+            
+            date = datetime.now() - timedelta(days=(self.num_weeks - week - 1) * 7 + (6 - day))
+            date_str = date.strftime("%Y-%m-%d")
+            weekday = calendar.day_name[date.weekday()]
+            
+            self._tooltip_window = tk.Toplevel(self)
+            self._tooltip_window.wm_overrideredirect(True)
+            
+            label = tk.Label(
+                self._tooltip_window,
+                text=f"{weekday}, {date_str}",
+                bg="#000000",
+                fg="#ffffff",
+                padx=5,
+                pady=2
+            )
+            label.pack()
+            
+            # Position tooltip near the mouse
+            x_pos = self.winfo_rootx() + event.x + 10
+            y_pos = self.winfo_rooty() + event.y - 20
+            self._tooltip_window.wm_geometry(f"+{x_pos}+{y_pos}")
+        elif self._tooltip_window:
+            self._tooltip_window.destroy()
+            self._tooltip_window = None
 
 # --- Achievement System ---
 ACHIEVEMENTS = [
@@ -178,6 +300,18 @@ class HacktoberfestDesktopUI:
                 style="Stats.TLabel"
             ).pack(pady=(0, 8))
         
+        # Contribution Graph
+        graph_frame = ttk.LabelFrame(main_frame, text="Contribution Activity")
+        graph_frame.pack(fill='x', pady=(0, 10))
+        
+        self.contribution_graph = ContributionGraph(
+            graph_frame,
+            width=900,
+            height=150,
+            bg="white"
+        )
+        self.contribution_graph.pack(padx=10, pady=5)
+
         # Recent activity (small size)
         activity_frame = ttk.LabelFrame(main_frame, text="Recent Activity")
         activity_frame.pack(fill='both', expand=True)
@@ -453,6 +587,22 @@ class HacktoberfestDesktopUI:
             style="Primary.TButton"
         ).grid(row=5, column=0, columnspan=2, pady=20)
 
+    def update_contribution_graph(self):
+        """Update the contribution graph with data from all contributors"""
+        contribution_data = {}
+        for contributor in self.tracker.get_all_contributors():
+            metrics = self.tracker.get_contributor_metrics(contributor.username)
+            contributions = metrics.get('daily_contributions', {})
+            
+            # Aggregate contributions by date
+            for date, count in contributions.items():
+                if date in contribution_data:
+                    contribution_data[date] += count
+                else:
+                    contribution_data[date] = count
+        
+        self.contribution_graph.update_data(contribution_data)
+
     def load_initial_data(self):
         # Update dashboard statistics
         metrics = self.tracker.get_project_performance_metrics()
@@ -463,6 +613,9 @@ class HacktoberfestDesktopUI:
         
         # Update leaderboard
         self.refresh_leaderboard()
+        
+        # Update contribution graph
+        self.update_contribution_graph()
 
     def update_dashboard_stats(self, metrics):
         self.stats_vars['contributors'].set(str(metrics['total_contributors']))
@@ -646,6 +799,7 @@ class HacktoberfestDesktopUI:
                 # Refresh views
                 self.refresh_contributors_list()
                 self.refresh_leaderboard()
+                self.update_contribution_graph()
                 
             else:
                 messagebox.showerror("Error", "Failed to add contribution")
