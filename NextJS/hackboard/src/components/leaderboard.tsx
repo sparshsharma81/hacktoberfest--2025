@@ -15,6 +15,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Trophy, Medal, Award, ExternalLink, GitPullRequest, Clock, Code, Loader2, Users, TrendingUp, GitBranch, FileCode } from "lucide-react";
+import { getAchievements } from "@/lib/achievements";
 
 interface Contributor {
     id: number;
@@ -188,6 +189,13 @@ const getRankBadgeVariant = (rank: number) => {
 
 const PodiumCard = ({ contributor }: { contributor: Contributor }) => {
     const completionPercentage = (contributor.mergedPRs / 6) * 100;
+    const achievements = getAchievements({
+        mergedPRs: contributor.mergedPRs,
+        totalPRs: contributor.totalPRs,
+        additions: contributor.additions,
+        deletions: contributor.deletions,
+        commits: contributor.commits,
+    });
 
     return (
         <Card className="relative overflow-hidden">
@@ -219,6 +227,16 @@ const PodiumCard = ({ contributor }: { contributor: Contributor }) => {
             </CardHeader>
 
             <CardContent className="pt-0">
+                {achievements.length > 0 && (
+                    <div className="flex flex-wrap gap-2 justify-center mb-4">
+                        {achievements.slice(0, 6).map((a) => (
+                            <span key={a.id} className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${a.className ?? "bg-muted"}`}>
+                                <span className="mr-1">{a.emoji}</span>
+                                {a.label}
+                            </span>
+                        ))}
+                    </div>
+                )}
                 <div className="grid grid-cols-3 gap-4 mb-4 text-sm">
                     <div className="flex items-center justify-center space-x-2">
                         <GitPullRequest className="h-4 w-4" />
@@ -526,6 +544,7 @@ export default function Leaderboard() {
                                                 <TableHead className="text-center text-white font-semibold">Deletions</TableHead>
                                                 <TableHead className="text-center text-white font-semibold">Commits</TableHead>
                                                 <TableHead className="text-center text-white font-semibold">Progress</TableHead>
+                                                <TableHead className="text-center text-white font-semibold">Badges</TableHead>
                                                 <TableHead className="w-16"></TableHead>
                                             </TableRow>
                                         </TableHeader>
@@ -592,6 +611,23 @@ export default function Leaderboard() {
                                                                     <span>6</span>
                                                                 </div>
                                                                 <Progress value={completionPercentage} className="h-2" />
+                                                            </div>
+                                                        </TableCell>
+
+                                                        <TableCell className="text-center">
+                                                            <div className="flex flex-wrap gap-1 justify-center">
+                                                                {getAchievements({
+                                                                    mergedPRs: contributor.mergedPRs,
+                                                                    totalPRs: contributor.totalPRs,
+                                                                    additions: contributor.additions,
+                                                                    deletions: contributor.deletions,
+                                                                    commits: contributor.commits,
+                                                                }).slice(0, 3).map((a) => (
+                                                                    <span key={a.id} className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${a.className ?? "bg-muted"}`}>
+                                                                        <span className="mr-1">{a.emoji}</span>
+                                                                        {a.label}
+                                                                    </span>
+                                                                ))}
                                                             </div>
                                                         </TableCell>
 
