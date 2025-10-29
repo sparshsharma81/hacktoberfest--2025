@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Trophy, Medal, Award, ExternalLink, GitPullRequest, Clock, Code, Loader2, Users, TrendingUp, GitBranch, FileCode, Share2 } from "lucide-react";
 import { getAchievements } from "@/lib/achievements";
 import { getLeaderboardShareLink, getShareText, getXShareUrl, getLinkedInShareUrl } from "@/lib/share";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Contributor {
     id: number;
@@ -381,10 +382,61 @@ export default function Leaderboard() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-background p-6 flex items-center justify-center">
-                <div className="text-center">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                    <p className="text-lg text-muted-foreground">Loading contributor data...</p>
+            <div className="min-h-screen bg-background p-6">
+                <div className="max-w-7xl mx-auto">
+                    <div className="text-center mb-8">
+                        <div className="flex items-center justify-center gap-3 mb-3">
+                            <Loader2 className="h-6 w-6 animate-spin" />
+                            <p className="text-sm text-muted-foreground">Loading contributor data...</p>
+                        </div>
+                        <Skeleton className="h-6 w-80 mx-auto" />
+                    </div>
+
+                    {/* Podium skeletons */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                        {[0,1,2].map((i) => (
+                            <div key={i} className="relative overflow-hidden border rounded-lg p-4">
+                                <div className="flex justify-center mb-4">
+                                    <Skeleton className="h-6 w-24" />
+                                </div>
+                                <div className="flex justify-center mb-4">
+                                    <Skeleton className="h-20 w-20 rounded-full" />
+                                </div>
+                                <div className="flex justify-center mb-4">
+                                    <Skeleton className="h-5 w-32" />
+                                </div>
+                                <div className="grid grid-cols-3 gap-4 mb-4">
+                                    <Skeleton className="h-4 w-full" />
+                                    <Skeleton className="h-4 w-full" />
+                                    <Skeleton className="h-4 w-full" />
+                                </div>
+                                <Skeleton className="h-2 w-full" />
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Table skeleton */}
+                    <div className="border rounded-lg overflow-hidden">
+                        <div className="border-b px-4 py-3">
+                            <Skeleton className="h-5 w-40" />
+                        </div>
+                        <div className="divide-y">
+                            {[...Array(6)].map((_, idx) => (
+                                <div key={idx} className="grid grid-cols-8 gap-2 items-center px-4 py-3">
+                                    <Skeleton className="h-4 w-10" />
+                                    <div className="col-span-2 flex items-center gap-3">
+                                        <Skeleton className="h-10 w-10 rounded-full" />
+                                        <Skeleton className="h-4 w-28" />
+                                    </div>
+                                    <Skeleton className="h-4 w-12" />
+                                    <Skeleton className="h-4 w-16" />
+                                    <Skeleton className="h-4 w-16" />
+                                    <Skeleton className="h-4 w-16" />
+                                    <Skeleton className="h-2 w-24" />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             </div>
         );
