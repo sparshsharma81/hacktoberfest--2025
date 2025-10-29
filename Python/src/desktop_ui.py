@@ -1,6 +1,7 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 import json
+import csv
 from datetime import datetime
 import webbrowser
 import os
@@ -62,6 +63,7 @@ class HacktoberfestDesktopUI:
     def create_menu(self):
         from menu_system import MenuSystem
         self.menu_system = MenuSystem(self.root, self.tracker)
+        self.setup_export_menu()  # Add export menu options
 
     def create_notebook(self):
         self.notebook = ttk.Notebook(self.root)
@@ -735,6 +737,95 @@ class HacktoberfestDesktopUI:
             )
 
 
+
+    def export_contributors_to_csv(self):
+        """Export contributors data to a CSV file"""
+        try:
+            # Ask user for save location
+            file_path = filedialog.asksaveasfilename(
+                defaultextension=".csv",
+                filetypes=[("CSV files", "*.csv")],
+                title="Export Contributors Data"
+            )
+            
+            if not file_path:  # User canceled
+                return
+            
+            contributors = self.tracker.get_all_contributors()
+            
+            with open(file_path, 'w', newline='', encoding='utf-8') as csvfile:
+                writer = csv.writer(csvfile)
+                # Write header
+                writer.writerow(['Username', 'Name', 'Email', 'Total Contributions', 'Streak', 'Days Active', 'Status'])
+                
+                # Write data
+                for contributor in contributors:
+                    metrics = self.tracker.get_contributor_metrics(contributor.username)
+                    writer.writerow([
+                        contributor.username,
+                        contributor.name,
+                        contributor.email,
+                        metrics['total_contributions'],
+                        f"{metrics['contribution_streak']} days",
+                        metrics['days_active'],
+                        "Completed" if metrics['hacktoberfest_complete'] else "In Progress"
+                    ])
+            
+            messagebox.showinfo("Success", "Contributors data exported successfully!")
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to export data: {str(e)}")
+
+    def export_leaderboard_to_csv(self):
+        """Export leaderboard data to a CSV file"""
+        try:
+            # Ask user for save location
+            file_path = filedialog.asksaveasfilename(
+                defaultextension=".csv",
+                filetypes=[("CSV files", "*.csv")],
+                title="Export Leaderboard Data"
+            )
+            
+            if not file_path:  # User canceled
+                return
+            
+            rankings = self.tracker.get_contributors_ranking()
+            
+            with open(file_path, 'w', newline='', encoding='utf-8') as csvfile:
+                writer = csv.writer(csvfile)
+                # Write header
+                writer.writerow(['Rank', 'Username', 'Engagement Score', 'Contributions', 'Streak', 'Active Days'])
+                
+                # Write data
+                for i, rank in enumerate(rankings, start=1):
+                    metrics = self.tracker.get_contributor_metrics(rank['username'])
+                    writer.writerow([
+                        i,
+                        rank['username'],
+                        f"{rank['engagement_score']:.1f}",
+                        metrics['total_contributions'],
+                        f"{metrics['contribution_streak']} days",
+                        metrics['days_active']
+                    ])
+            
+            messagebox.showinfo("Success", "Leaderboard data exported successfully!")
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to export data: {str(e)}")
+
+    def setup_export_menu(self):
+        """Setup the export menu in the menu bar"""
+        export_menu = tk.Menu(self.menu_system.menubar, tearoff=0)
+        self.menu_system.menubar.add_cascade(label="Export", menu=export_menu)
+        
+        export_menu.add_command(
+            label="Export Contributors",
+            command=self.export_contributors_to_csv
+        )
+        export_menu.add_command(
+            label="Export Leaderboard",
+            command=self.export_leaderboard_to_csv
+        )
 
     def run(self):
         self.root.mainloop()
