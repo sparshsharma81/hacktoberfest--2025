@@ -14,8 +14,9 @@ import {
 } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Trophy, Medal, Award, ExternalLink, GitPullRequest, Clock, Code, Loader2, Users, TrendingUp, GitBranch, FileCode } from "lucide-react";
+import { Trophy, Medal, Award, ExternalLink, GitPullRequest, Clock, Code, Loader2, Users, TrendingUp, GitBranch, FileCode, Share2 } from "lucide-react";
 import { getAchievements } from "@/lib/achievements";
+import { getLeaderboardShareLink, getShareText, getXShareUrl, getLinkedInShareUrl } from "@/lib/share";
 
 interface Contributor {
     id: number;
@@ -224,6 +225,32 @@ const PodiumCard = ({ contributor }: { contributor: Contributor }) => {
                     @{contributor.username}
                     <ExternalLink className="h-4 w-4 ml-1" />
                 </Button>
+                <div className="mt-2">
+                    <Button
+                        variant="outline"
+                        className="h-8 px-2 text-xs"
+                        onClick={() => {
+                            const url = getLeaderboardShareLink(contributor.username);
+                            const text = getShareText({
+                                username: contributor.username,
+                                rank: contributor.rank,
+                                mergedPRs: contributor.mergedPRs,
+                                additions: contributor.additions,
+                                deletions: contributor.deletions,
+                                commits: contributor.commits,
+                            });
+                            if (navigator.share) {
+                                navigator.share({ title: "Hacktoberfest Leaderboard", text, url }).catch(() => {
+                                    window.open(getXShareUrl(text, url), '_blank');
+                                });
+                            } else {
+                                window.open(getXShareUrl(text, url), '_blank');
+                            }
+                        }}
+                    >
+                        <Share2 className="h-3.5 w-3.5 mr-1" /> Share
+                    </Button>
+                </div>
             </CardHeader>
 
             <CardContent className="pt-0">
@@ -752,14 +779,38 @@ export default function Leaderboard() {
 
                                                         {visibleColumns.actions && (
                                                             <TableCell>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                                                    onClick={() => window.open(contributor.profileUrl, '_blank')}
-                                                                >
-                                                                    <ExternalLink className="h-4 w-4" />
-                                                                </Button>
+                                                                <div className="flex items-center gap-1 justify-end">
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                                                        onClick={() => {
+                                                                            const url = getLeaderboardShareLink(contributor.username);
+                                                                            const text = getShareText({
+                                                                                username: contributor.username,
+                                                                                rank: contributor.rank,
+                                                                                mergedPRs: contributor.mergedPRs,
+                                                                            });
+                                                                            if (navigator.share) {
+                                                                                navigator.share({ title: "Hacktoberfest Leaderboard", text, url }).catch(() => {
+                                                                                    window.open(getXShareUrl(text, url), '_blank');
+                                                                                });
+                                                                            } else {
+                                                                                window.open(getXShareUrl(text, url), '_blank');
+                                                                            }
+                                                                        }}
+                                                                    >
+                                                                        <Share2 className="h-4 w-4" />
+                                                                    </Button>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                                                        onClick={() => window.open(contributor.profileUrl, '_blank')}
+                                                                    >
+                                                                        <ExternalLink className="h-4 w-4" />
+                                                                    </Button>
+                                                                </div>
                                                             </TableCell>
                                                         )}
                                                     </TableRow>
