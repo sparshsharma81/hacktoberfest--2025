@@ -218,6 +218,26 @@ class HacktoberfestDesktopUI:
         search_entry = ttk.Entry(search_frame, textvariable=self.search_var)
         search_entry.pack(side='left', fill='x', expand=True, padx=5)
         
+        # Advanced filter controls
+        ttk.Label(search_frame, text="Type:").pack(side='left', padx=5)
+        self.type_filter_var = tk.StringVar()
+        type_combo = ttk.Combobox(search_frame, textvariable=self.type_filter_var, values=["", "bug-fix", "feature", "documentation", "test", "other"], width=12, state="readonly")
+        type_combo.pack(side='left', padx=5)
+        self.type_filter_var.trace('w', self.filter_contributors)
+        
+        ttk.Label(search_frame, text="Status:").pack(side='left', padx=5)
+        self.status_filter_var = tk.StringVar()
+        status_combo = ttk.Combobox(search_frame, textvariable=self.status_filter_var, values=["", "Completed", "In Progress"], width=12, state="readonly")
+        status_combo.pack(side='left', padx=5)
+        self.status_filter_var.trace('w', self.filter_contributors)
+        
+        # Date range filter (simple: year)
+        ttk.Label(search_frame, text="Year:").pack(side='left', padx=5)
+        self.year_filter_var = tk.StringVar()
+        year_combo = ttk.Combobox(search_frame, textvariable=self.year_filter_var, values=["", str(datetime.now().year)], width=8, state="readonly")
+        year_combo.pack(side='left', padx=5)
+        self.year_filter_var.trace('w', self.filter_contributors)
+        
         # Contributors list
         self.contributors_tree = ttk.Treeview(
             self.contributors_tab,
@@ -543,12 +563,31 @@ class HacktoberfestDesktopUI:
 
     def filter_contributors(self, *args):
         search_text = self.search_var.get().lower()
+        type_filter = self.type_filter_var.get()
+        status_filter = self.status_filter_var.get()
+        year_filter = self.year_filter_var.get()
         
         for item in self.contributors_tree.get_children():
             values = self.contributors_tree.item(item)['values']
-            if (search_text in str(values[0]).lower() or  # username
-                search_text in str(values[1]).lower() or  # name
-                search_text in str(values[2]).lower()):   # email
+            username, name, email, contribs, status = values[:5]
+            show = True
+            # Text search
+            if search_text and not (search_text in str(username).lower() or search_text in str(name).lower() or search_text in str(email).lower()):
+                show = False
+            # Type filter
+            if type_filter:
+                contributor = self.tracker.get_contributor(username)
+                if not any(c['type'] == type_filter for c in contributor.contributions):
+                    show = False
+            # Status filter
+            if status_filter and ((status_filter == "Completed" and status != "✅") or (status_filter == "In Progress" and status != "🔄")):
+                show = False
+            # Year filter
+            if year_filter:
+                contributor = self.tracker.get_contributor(username)
+                if not any(c['date'].startswith(year_filter) for c in contributor.contributions):
+                    show = False
+            if show:
                 self.contributors_tree.reattach(item, "", "end")
             else:
                 self.contributors_tree.detach(item)
