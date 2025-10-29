@@ -275,6 +275,28 @@ export default function Leaderboard() {
     const [error, setError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [minMergedPRs, setMinMergedPRs] = useState<number>(0);
+    const [showColumnMenu, setShowColumnMenu] = useState(false);
+    const defaultVisibleColumns = {
+        rank: true,
+        contributor: true,
+        mergedPrs: true,
+        additions: true,
+        deletions: true,
+        commits: true,
+        progress: true,
+        badges: true,
+        actions: true,
+    } as const;
+    const [visibleColumns, setVisibleColumns] = useState<Record<keyof typeof defaultVisibleColumns, boolean>>(() => {
+        try {
+            const raw = localStorage.getItem("leaderboard_visible_columns");
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                return { ...defaultVisibleColumns, ...parsed };
+            }
+        } catch {}
+        return { ...defaultVisibleColumns };
+    });
 
     useEffect(() => {
         const fetchContributors = async () => {
@@ -299,6 +321,13 @@ export default function Leaderboard() {
 
         fetchContributors();
     }, []);
+
+    // Persist visible columns
+    useEffect(() => {
+        try {
+            localStorage.setItem("leaderboard_visible_columns", JSON.stringify(visibleColumns));
+        } catch {}
+    }, [visibleColumns]);
 
     // Initialize theme from localStorage or system preference
     useEffect(() => {
@@ -396,7 +425,7 @@ export default function Leaderboard() {
                 </div>
 
                 {/* Filters */}
-                <div className="mb-12">
+                <div className="mb-12 relative">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="col-span-1">
                             <label className="block text-sm font-medium text-muted-foreground mb-1">Search by username</label>
@@ -434,6 +463,62 @@ export default function Leaderboard() {
                             >
                                 Clear filters
                             </Button>
+                        </div>
+                        <div className="col-span-1 flex items-end justify-end">
+                            <div className="relative">
+                                <Button
+                                    variant="outline"
+                                    className="w-full md:w-auto"
+                                    onClick={() => setShowColumnMenu((v) => !v)}
+                                >
+                                    Columns
+                                </Button>
+                                {showColumnMenu && (
+                                    <div className="absolute right-0 mt-2 w-64 rounded-md border bg-background shadow z-20 p-3">
+                                        <div className="mb-2 text-sm font-medium">Toggle columns</div>
+                                        <div className="space-y-2 text-sm">
+                                            {(
+                                                [
+                                                    { key: "rank", label: "Rank" },
+                                                    { key: "contributor", label: "Contributor" },
+                                                    { key: "mergedPrs", label: "Merged PRs" },
+                                                    { key: "additions", label: "Additions" },
+                                                    { key: "deletions", label: "Deletions" },
+                                                    { key: "commits", label: "Commits" },
+                                                    { key: "progress", label: "Progress" },
+                                                    { key: "badges", label: "Badges" },
+                                                    { key: "actions", label: "Actions" },
+                                                ] as const
+                                            ).map(({ key, label }) => (
+                                                <label key={key} className="flex items-center justify-between gap-3">
+                                                    <span>{label}</span>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={visibleColumns[key]}
+                                                        onChange={(e) =>
+                                                            setVisibleColumns((prev) => ({ ...prev, [key]: e.target.checked }))
+                                                        }
+                                                    />
+                                                </label>
+                                            ))}
+                                        </div>
+                                        <div className="mt-3 flex justify-between">
+                                            <Button variant="ghost" onClick={() => setVisibleColumns({ ...defaultVisibleColumns })}>All</Button>
+                                            <Button variant="ghost" onClick={() => setVisibleColumns({
+                                                rank: true,
+                                                contributor: true,
+                                                mergedPrs: true,
+                                                additions: false,
+                                                deletions: false,
+                                                commits: true,
+                                                progress: true,
+                                                badges: true,
+                                                actions: true,
+                                            })}>Compact</Button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -537,15 +622,33 @@ export default function Leaderboard() {
                                     <Table>
                                         <TableHeader>
                                             <TableRow className="hover:bg-transparent">
-                                                <TableHead className="w-16 text-white font-semibold">Rank</TableHead>
-                                                <TableHead className="text-white font-semibold">Contributor</TableHead>
-                                                <TableHead className="text-center text-white font-semibold">Merged PRs</TableHead>
-                                                <TableHead className="text-center text-white font-semibold">Additions</TableHead>
-                                                <TableHead className="text-center text-white font-semibold">Deletions</TableHead>
-                                                <TableHead className="text-center text-white font-semibold">Commits</TableHead>
-                                                <TableHead className="text-center text-white font-semibold">Progress</TableHead>
-                                                <TableHead className="text-center text-white font-semibold">Badges</TableHead>
-                                                <TableHead className="w-16"></TableHead>
+                                                {visibleColumns.rank && (
+                                                    <TableHead className="w-16 text-white font-semibold">Rank</TableHead>
+                                                )}
+                                                {visibleColumns.contributor && (
+                                                    <TableHead className="text-white font-semibold">Contributor</TableHead>
+                                                )}
+                                                {visibleColumns.mergedPrs && (
+                                                    <TableHead className="text-center text-white font-semibold">Merged PRs</TableHead>
+                                                )}
+                                                {visibleColumns.additions && (
+                                                    <TableHead className="text-center text-white font-semibold">Additions</TableHead>
+                                                )}
+                                                {visibleColumns.deletions && (
+                                                    <TableHead className="text-center text-white font-semibold">Deletions</TableHead>
+                                                )}
+                                                {visibleColumns.commits && (
+                                                    <TableHead className="text-center text-white font-semibold">Commits</TableHead>
+                                                )}
+                                                {visibleColumns.progress && (
+                                                    <TableHead className="text-center text-white font-semibold">Progress</TableHead>
+                                                )}
+                                                {visibleColumns.badges && (
+                                                    <TableHead className="text-center text-white font-semibold">Badges</TableHead>
+                                                )}
+                                                {visibleColumns.actions && (
+                                                    <TableHead className="w-16"></TableHead>
+                                                )}
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -554,93 +657,111 @@ export default function Leaderboard() {
 
                                                 return (
                                                     <TableRow key={contributor.id} className="hover:bg-muted/50 transition-colors">
-                                                        <TableCell>
-                                                            <div className="flex items-center justify-center">
-                                                                {getRankIcon(contributor.rank)}
-                                                            </div>
-                                                        </TableCell>
+                                                        {visibleColumns.rank && (
+                                                            <TableCell>
+                                                                <div className="flex items-center justify-center">
+                                                                    {getRankIcon(contributor.rank)}
+                                                                </div>
+                                                            </TableCell>
+                                                        )}
 
-                                                        <TableCell>
-                                                            <div className="flex items-center space-x-3">
-                                                                <Avatar className="h-10 w-10">
-                                                                    <AvatarImage src={contributor.avatar} alt={contributor.username} />
-                                                                    <AvatarFallback>
-                                                                        {contributor.username.slice(0, 2).toUpperCase()}
-                                                                    </AvatarFallback>
-                                                                </Avatar>
+                                                        {visibleColumns.contributor && (
+                                                            <TableCell>
+                                                                <div className="flex items-center space-x-3">
+                                                                    <Avatar className="h-10 w-10">
+                                                                        <AvatarImage src={contributor.avatar} alt={contributor.username} />
+                                                                        <AvatarFallback>
+                                                                            {contributor.username.slice(0, 2).toUpperCase()}
+                                                                        </AvatarFallback>
+                                                                    </Avatar>
+                                                                    <Button
+                                                                        variant="link"
+                                                                        className="p-0 h-auto font-medium text-blue-600 hover:text-blue-700"
+                                                                        onClick={() => window.open(contributor.profileUrl, '_blank')}
+                                                                    >
+                                                                        @{contributor.username}
+                                                                    </Button>
+                                                                </div>
+                                                            </TableCell>
+                                                        )}
+
+                                                        {visibleColumns.mergedPrs && (
+                                                            <TableCell className="text-center">
+                                                                <div className="flex items-center justify-center space-x-2">
+                                                                    <GitPullRequest className="h-4 w-4" />
+                                                                    <span className="font-semibold">{contributor.mergedPRs}</span>
+                                                                </div>
+                                                            </TableCell>
+                                                        )}
+
+                                                        {visibleColumns.additions && (
+                                                            <TableCell className="text-center">
+                                                                <div className="flex items-center justify-center space-x-2">
+                                                                    <span className="text-green-600 font-semibold">+{contributor.additions}</span>
+                                                                </div>
+                                                            </TableCell>
+                                                        )}
+
+                                                        {visibleColumns.deletions && (
+                                                            <TableCell className="text-center">
+                                                                <div className="flex items-center justify-center space-x-2">
+                                                                    <span className="text-red-600 font-semibold">-{contributor.deletions}</span>
+                                                                </div>
+                                                            </TableCell>
+                                                        )}
+
+                                                        {visibleColumns.commits && (
+                                                            <TableCell className="text-center">
+                                                                <div className="flex items-center justify-center space-x-2">
+                                                                    <Code className="h-4 w-4" />
+                                                                    <span className="font-semibold">{contributor.commits}</span>
+                                                                </div>
+                                                            </TableCell>
+                                                        )}
+
+                                                        {visibleColumns.progress && (
+                                                            <TableCell className="text-center">
+                                                                <div className="w-full max-w-24 mx-auto">
+                                                                    <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                                                                        <span>{contributor.mergedPRs}</span>
+                                                                        <span>6</span>
+                                                                    </div>
+                                                                    <Progress value={completionPercentage} className="h-2" />
+                                                                </div>
+                                                            </TableCell>
+                                                        )}
+
+                                                        {visibleColumns.badges && (
+                                                            <TableCell className="text-center">
+                                                                <div className="flex flex-wrap gap-1 justify-center">
+                                                                    {getAchievements({
+                                                                        mergedPRs: contributor.mergedPRs,
+                                                                        totalPRs: contributor.totalPRs,
+                                                                        additions: contributor.additions,
+                                                                        deletions: contributor.deletions,
+                                                                        commits: contributor.commits,
+                                                                    }).slice(0, 3).map((a) => (
+                                                                        <span key={a.id} className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${a.className ?? "bg-muted"}`}>
+                                                                            <span className="mr-1">{a.emoji}</span>
+                                                                            {a.label}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            </TableCell>
+                                                        )}
+
+                                                        {visibleColumns.actions && (
+                                                            <TableCell>
                                                                 <Button
-                                                                    variant="link"
-                                                                    className="p-0 h-auto font-medium text-blue-600 hover:text-blue-700"
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                                                                     onClick={() => window.open(contributor.profileUrl, '_blank')}
                                                                 >
-                                                                    @{contributor.username}
+                                                                    <ExternalLink className="h-4 w-4" />
                                                                 </Button>
-                                                            </div>
-                                                        </TableCell>
-
-                                                        <TableCell className="text-center">
-                                                            <div className="flex items-center justify-center space-x-2">
-                                                                <GitPullRequest className="h-4 w-4" />
-                                                                <span className="font-semibold">{contributor.mergedPRs}</span>
-                                                            </div>
-                                                        </TableCell>
-
-                                                        <TableCell className="text-center">
-                                                            <div className="flex items-center justify-center space-x-2">
-                                                                <span className="text-green-600 font-semibold">+{contributor.additions}</span>
-                                                            </div>
-                                                        </TableCell>
-
-                                                        <TableCell className="text-center">
-                                                            <div className="flex items-center justify-center space-x-2">
-                                                                <span className="text-red-600 font-semibold">-{contributor.deletions}</span>
-                                                            </div>
-                                                        </TableCell>
-
-                                                        <TableCell className="text-center">
-                                                            <div className="flex items-center justify-center space-x-2">
-                                                                <Code className="h-4 w-4" />
-                                                                <span className="font-semibold">{contributor.commits}</span>
-                                                            </div>
-                                                        </TableCell>
-
-                                                        <TableCell className="text-center">
-                                                            <div className="w-full max-w-24 mx-auto">
-                                                                <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                                                                    <span>{contributor.mergedPRs}</span>
-                                                                    <span>6</span>
-                                                                </div>
-                                                                <Progress value={completionPercentage} className="h-2" />
-                                                            </div>
-                                                        </TableCell>
-
-                                                        <TableCell className="text-center">
-                                                            <div className="flex flex-wrap gap-1 justify-center">
-                                                                {getAchievements({
-                                                                    mergedPRs: contributor.mergedPRs,
-                                                                    totalPRs: contributor.totalPRs,
-                                                                    additions: contributor.additions,
-                                                                    deletions: contributor.deletions,
-                                                                    commits: contributor.commits,
-                                                                }).slice(0, 3).map((a) => (
-                                                                    <span key={a.id} className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${a.className ?? "bg-muted"}`}>
-                                                                        <span className="mr-1">{a.emoji}</span>
-                                                                        {a.label}
-                                                                    </span>
-                                                                ))}
-                                                            </div>
-                                                        </TableCell>
-
-                                                        <TableCell>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                                                onClick={() => window.open(contributor.profileUrl, '_blank')}
-                                                            >
-                                                                <ExternalLink className="h-4 w-4" />
-                                                            </Button>
-                                                        </TableCell>
+                                                            </TableCell>
+                                                        )}
                                                     </TableRow>
                                                 );
                                             })}
