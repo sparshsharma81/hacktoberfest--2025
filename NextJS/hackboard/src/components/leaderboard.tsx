@@ -519,13 +519,13 @@ export default function Leaderboard() {
                                     <Table>
                                         <TableHeader>
                                             <TableRow className="hover:bg-transparent">
-                                                <TableHead className="w-16 text-red-600 font-semibold">Rank</TableHead>
-                                                <TableHead className="text-red-600 font-semibold">Contributor</TableHead>
-                                                <TableHead className="text-center text-red-600 font-semibold">Merged PRs</TableHead>
-                                                <TableHead className="text-center text-red-600 font-semibold">Additions</TableHead>
-                                                <TableHead className="text-center text-red-600 font-semibold">Deletions</TableHead>
-                                                <TableHead className="text-center text-red-600 font-semibold">Commits</TableHead>
-                                                <TableHead className="text-center text-red-600 font-semibold">Progress</TableHead>
+                                                <TableHead className="w-16 text-white font-semibold">Rank</TableHead>
+                                                <TableHead className="text-white font-semibold">Contributor</TableHead>
+                                                <TableHead className="text-center text-white font-semibold">Merged PRs</TableHead>
+                                                <TableHead className="text-center text-white font-semibold">Additions</TableHead>
+                                                <TableHead className="text-center text-white font-semibold">Deletions</TableHead>
+                                                <TableHead className="text-center text-white font-semibold">Commits</TableHead>
+                                                <TableHead className="text-center text-white font-semibold">Progress</TableHead>
                                                 <TableHead className="w-16"></TableHead>
                                             </TableRow>
                                         </TableHeader>
