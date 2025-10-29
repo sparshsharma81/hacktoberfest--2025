@@ -8,6 +8,31 @@ from Contribute_Checker import ProjectTracker
 from Contribute_Checker.metrics_visualizer import MetricsVisualizer
 
 class HacktoberfestDesktopUI:
+    # Theme colors
+    LIGHT_THEME = {
+        "bg": "#ffffff",
+        "fg": "#000000",
+        "accent": "#1f6feb",
+        "card_bg": "#f6f8fa",
+        "table_even": "#eef6ff",
+        "table_odd": "#ffffff",
+        "table_top": "#fff8dc",
+        "button_bg": "#1f6feb",
+        "button_fg": "#ffffff"
+    }
+    
+    DARK_THEME = {
+        "bg": "#0d1117",
+        "fg": "#c9d1d9",
+        "accent": "#58a6ff",
+        "card_bg": "#161b22",
+        "table_even": "#1c2128",
+        "table_odd": "#0d1117",
+        "table_top": "#2d333b",
+        "button_bg": "#238636",
+        "button_fg": "#ffffff"
+    }
+
     def __init__(self):
         self.tracker = ProjectTracker()
         self.setup_window()
