@@ -228,7 +228,7 @@ const PodiumCard = ({ contributor }: { contributor: Contributor }) => {
                 <div className="mt-2">
                     <Button
                         variant="outline"
-                        className="h-8 px-2 text-xs"
+                        className="h-8 px-2 text-xs bg-blue-600 hover:bg-blue-700 text-white"
                         onClick={() => {
                             const url = getLeaderboardShareLink(contributor.username);
                             const text = getShareText({
@@ -495,7 +495,7 @@ export default function Leaderboard() {
                             <div className="relative">
                                 <Button
                                     variant="outline"
-                                    className="w-full md:w-auto"
+                                    className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white"
                                     onClick={() => setShowColumnMenu((v) => !v)}
                                 >
                                     Columns
